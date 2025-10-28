@@ -1,0 +1,281 @@
+# GOAT Watches — MVP Product Requirements Document
+
+**Status:** Draft MVP
+
+**Audience:** Engineers, designers, product managers (Replit project)
+
+**Goal:** Build an MVP web app that lists the all-time great watches ("GOAT watches") as a community-curated leaderboard. Allow users to add watches, upvote, write short text reviews, and upload images (local storage for MVP). Frontend in **React**, backend in **Java**, project hostable on **Replit**. Visual theme: **rich green + gold accents** on bright white background.
+
+---
+
+## 1. High-level summary
+
+Create a simple, viral-friendly leaderboard where watch lovers add their favorite watches, vote them up or down, and leave short text reviews. Images can be uploaded; for the MVP images are saved to local storage (server filesystem) and referenced by entries. Focus on a clean UX, fast interactions, and an authoritative leaderboard (sorted by net votes and recency).
+
+---
+
+## 2. Key objectives (MVP)
+
+* Launch quickly on Replit with minimal infra.
+* Create an intuitive leaderboard UI that encourages votes and contributions.
+* Ensure data integrity and simple moderation tools.
+* Provide a clear codebase split: React frontend + Java backend.
+
+---
+
+## 3. Target users
+
+* Watch enthusiasts and collectors.
+* Casual buyers who want quick peer opinions.
+* Content creators who want visibility for reviews and photos.
+
+---
+
+## 4. Core features (MVP)
+
+1. **Leaderboard** (home page)
+
+   * Ranked list of watches (title, brand, thumbnail, net votes, number of reviews, short excerpt of top review).
+   * Sorting: Top (net votes), Newest, Most Reviewed.
+
+2. **Add Watch**
+
+   * Form to submit watch: Brand, Model name, Year (optional), Short description, Image upload (single image for MVP).
+   * Prevent exact duplicates (simple title + brand normalization check).
+
+3. **Watch Detail Page**
+
+   * Full details, all reviews (paginated), vote button (+/-), add review form (text only), image gallery (user uploads).
+
+4. **Voting**
+
+   * Upvote / Downvote per watch.
+   * One vote per browser session/user (for MVP use a simple cookie / localStorage + server-side IP check). Can be extended to authenticated accounts later.
+
+5. **Reviews**
+
+   * Text-only reviews (max 1000 chars) with optional image attachments (image stored locally on backend file storage).
+   * Display review metadata: timestamp, optionally user display name (free text), image thumbnail.
+
+6. **Image Upload**
+
+   * Save images to local filesystem on server (e.g., `/uploads/`), return public URL for frontend.
+   * Image validation: max file size 5MB, allowed mime types (jpeg, png), resize to max 1200px on the server (optional for MVP but recommended).
+
+7. **Admin / Moderation (basic)**
+
+   * Admin endpoint to remove content (reviews, watch entries) using a secret admin token (env var) — simple moderation for MVP.
+
+---
+
+## 5. Non-functional requirements
+
+* **Responsiveness:** Mobile-first design; works well on phones and tablets.
+* **Performance:** Fast page loads, paginated lists to avoid heavy payloads.
+* **Security:** Basic input sanitization, file type checking, limit file sizes. No auth in MVP beyond admin token.
+* **Extensibility:** Architecture supports adding OAuth, S3 storage, full-text search, and verified ownership later.
+
+---
+
+## 6. Tech stack & libraries
+
+* **Frontend:** React (Create React App or Vite) + React Router + Axios (for API). Tailwind CSS optional; or simple CSS with variables for theme.
+* **Backend:** Java (Spring Boot recommended for quick REST API). Embedded server (Tomcat) works on Replit.
+* **Database:** Embedded / lightweight for Replit — use **H2** in file-mode (persist across restarts). Schema is simple and portable to Postgres later.
+* **Images:** Local filesystem `/uploads` (server root). Serve statically via Spring Boot resource mapping.
+* **Build & Run:** Replit should run both frontend and backend; provide a single start script or run backend on port 8080 and frontend dev server that proxies API.
+
+---
+
+## 7. Data model (simplified)
+
+* **watch**
+
+  * id (UUID)
+  * brand (string)
+  * model (string)
+  * year (int, nullable)
+  * description (text)
+  * created_at (timestamp)
+  * created_by (string, free text for now)
+  * thumbnail_url (string)
+  * net_votes (int) — computed or stored
+
+* **review**
+
+  * id (UUID)
+  * watch_id (FK)
+  * author_name (string)
+  * content (text)
+  * image_url (string, nullable)
+  * created_at (timestamp)
+
+* **vote**
+
+  * id (UUID)
+  * watch_id (FK)
+  * voter_token (string) — cookie/localStorage token or IP hash
+  * vote_value (int) — +1 or -1
+  * created_at
+
+---
+
+## 8. API endpoints (REST)
+
+* `GET /api/watches?sort=top|new|reviews&page=1&size=20` — list watches (paged).
+* `POST /api/watches` — create watch (multipart if image included). Body: brand, model, year, description, created_by.
+* `GET /api/watches/{id}` — get watch detail + reviews (or separate review endpoint).
+* `POST /api/watches/{id}/reviews` — add a review (multipart if image). Body: author_name, content.
+* `POST /api/watches/{id}/vote` — body: { vote: 1 | -1, voter_token }.
+* `GET /uploads/{filename}` — static access to uploaded images.
+* `DELETE /api/admin/watches/{id}?token=ADMIN_TOKEN` — admin removal (protected by token env var).
+
+**Responses:** Use JSON, standard 200/201/400/401/404.
+
+---
+
+## 9. Frontend components & pages
+
+* **App shell / Header** — logo (green/gold), navigation: Home / Add Watch / About.
+* **Home / Leaderboard** — large hero header, search box (optional), leaderboard cards.
+* **WatchCard** — thumbnail, brand/model, net votes, review count, quick upvote/downvote buttons.
+* **AddWatchForm** — modal or page with image upload preview.
+* **WatchDetail** — carousel of images, full description, review list, add-review form, vote widget.
+* **Admin Tools** — hidden route accessible with token (or simple UI element for admin actions).
+
+---
+
+## 10. UX & UI guideline (theme)
+
+* **Background:** Bright white (#FFFFFF).
+* **Primary color:** Deep forest green (e.g., #0B6B3A) for primary buttons, headers.
+* **Accent / Gold:** Metallic gold (e.g., #C6A25E) for highlights, badges, and borders.
+* **Typography:** Clean sans-serif (Inter or system stack). Large, roomy cards, generous whitespace.
+* **Buttons:** Rounded (6-12px), subtle shadows, gold accent for primary CTAs.
+* **Imagery:** Thumbnails with subtle drop shadow, 1:1 or 3:2 aspect ratio.
+
+Provide a small CSS variables file for theme so designers can tweak colors easily.
+
+---
+
+## 11. Image handling (detailed)
+
+**MVP (local storage):**
+
+1. Frontend submits multipart `POST /api/watches` or `POST /api/watches/{id}/reviews` with file field `image`.
+2. Backend validates mime-type and size (<= 5MB).
+3. Backend assigns a safe filename: `UUID_originalname.ext` and saves to `/uploads`.
+4. Optionally generate a resized variant (1200px max) using a Java image lib (e.g., Thumbnailator).
+5. Return `image_url` as `/uploads/{filename}`.
+
+**Future (S3):**
+
+* Swap local storage implementation with an S3 client. Store S3 keys in DB. Keep API signature same.
+* Add signed PUT policy for direct-to-S3 uploads (improves performance).
+
+---
+
+## 12. Security & moderation (MVP)
+
+* Validate and sanitize all text inputs to prevent XSS.
+* Strictly validate uploaded files.
+* Rate-limit writes (simple in-memory rate limit per IP).
+* Admin endpoints require `ADMIN_TOKEN` env var.
+* For vote uniqueness: store `voter_token` cookie and check server-side to prevent duplicate votes.
+
+---
+
+## 13. Developer setup (Replit-ready)
+
+**Folder structure (suggested)**
+
+```
+/root
+  /frontend  (React app)
+  /backend   (Spring Boot app)
+  README.md
+```
+
+**Run locally on Replit:**
+
+* Backend: `mvn spring-boot:run` (port 8080)
+* Frontend: `npm start` (set proxy to `http://localhost:8080` in package.json)
+* Replit can expose one public port; if needed, configure backend to serve built frontend (`npm run build` -> copy `build` to Spring resources/static`).
+
+**Env vars**
+
+* `ADMIN_TOKEN=...`
+* `UPLOAD_DIR=/home/runner/project/uploads` (Replit path)
+
+Include a `README.md` with all run steps.
+
+---
+
+## 14. Acceptance criteria
+
+* Users can add a watch with an image and it appears on the leaderboard.
+* Users can upvote/downvote watches; net votes update immediately.
+* Users can add text reviews to a watch; reviews display in the detail page.
+* Uploaded images are stored locally and served back as thumbnails and full-size images.
+* Admin can remove problematic content using `ADMIN_TOKEN`.
+
+---
+
+## 15. Minimal milestone plan (1–3 weeks realistic on Replit)
+
+* **Day 1:** Project skeleton, React + Spring Boot containers, H2 DB, simple `GET /api/watches` and frontend listing.
+* **Day 2–3:** Add `POST /api/watches` with image upload, local storage, and watch detail endpoint.
+* **Day 4:** Voting system and vote persistence; frontend vote UI.
+* **Day 5:** Reviews endpoint + UI. Basic validation and pagination.
+* **Day 6:** Admin endpoint, theme polish, CSS variables, responsive tweaks.
+* **Day 7+:** QA, small UX fixes, create README for Replit, prepare demo link.
+
+---
+
+## 16. Next steps / possible enhancements after MVP
+
+* User accounts (OAuth), verified owners, and weight for verified reviews.
+* S3 + CDN for images, signed uploads.
+* Video reviews support with transcoding pipeline.
+* Advanced fraud detection (vote manipulation detection) and reputation system.
+* Partnerships with sellers and brands for official images and metadata.
+* SEO optimization and server-side rendering for better discoverability.
+
+---
+
+## 17. Appendix — Example API payloads
+
+**Create watch (multipart)**
+
+```
+POST /api/watches
+Content-Type: multipart/form-data
+fields: brand=Rolex, model=Submariner, year=1966, description=Iconic diver, created_by=Anon
+file: image -> submariner.jpg
+```
+
+**Vote**
+
+```
+POST /api/watches/{id}/vote
+Content-Type: application/json
+{ "vote": 1, "voter_token": "abc-123" }
+```
+
+**Add review (multipart)**
+
+```
+POST /api/watches/{id}/reviews
+fields: author_name=Ajay, content=Love the lume and bezel
+file: image -> photo1.jpg
+```
+
+---
+
+### Contact / Ownership
+
+* Provide this PRD to devs on Replit. If you want, I can also generate a starter repo scaffold (React + Spring Boot) with sample endpoints and Docker-less run scripts.
+
+---
+
+*End of PRD*
