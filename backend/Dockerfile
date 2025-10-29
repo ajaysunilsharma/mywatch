@@ -23,7 +23,7 @@ ENV PORT 10000
 EXPOSE 10000
 
 # rename the jar file
-RUN cp target/goat-watches-backend-0.0.1-SNAPSHOT.jar app.jar
+RUN cp target/goat-watches-backend-1.0.0-SNAPSHOT.jar app.jar
 
 # Run the jar
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
