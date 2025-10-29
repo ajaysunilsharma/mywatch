@@ -22,9 +22,9 @@ RUN ./mvnw clean package -DskipTests
 ENV PORT 10000
 EXPOSE 10000
 
-RUN ls -ltr
+RUN ls -ltr target/
 # rename the jar file
-RUN cp /app/target/goat-watches-backend-1.0.0-SNAPSHOT.jar.original app.jar
+RUN cp target/goat-watches-backend-1.0.0-SNAPSHOT.jar.original app.jar
 
 # Run the jar
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
