@@ -22,6 +22,7 @@ RUN ./mvnw clean package -DskipTests
 ENV PORT 10000
 EXPOSE 10000
 
+RUN ls -ltr
 # rename the jar file
 RUN cp /app/target/goat-watches-backend-1.0.0-SNAPSHOT.jar.original app.jar
 
