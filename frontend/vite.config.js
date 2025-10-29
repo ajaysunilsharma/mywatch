@@ -9,11 +9,11 @@ export default defineConfig({
     port: 5000,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'https://mywatch-4117.onrender.com/',
         changeOrigin: true
       },
       '/uploads': {
-        target: 'http://localhost:8080',
+        target: 'https://mywatch-4117.onrender.com/',
         changeOrigin: true
       }
     }
