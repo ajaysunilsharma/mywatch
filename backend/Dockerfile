@@ -24,7 +24,7 @@ EXPOSE 10000
 
 RUN ls -ltr target/
 # rename the jar file
-RUN cp target/goat-watches-backend-1.0.0-SNAPSHOT.jar.original app.jar
+RUN cp target/goat-watches-backend-1.0.0.jar app.jar
 
 # Run the jar
 ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
