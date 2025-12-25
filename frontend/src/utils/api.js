@@ -50,4 +50,13 @@ export const deleteReview = (id, token) => {
   return api.delete(`/admin/reviews/${id}?token=${token}`);
 };
 
+ export const updateWatch = async (id, formData) => {
+   const response = await axios.put(`${API_URL}/watches/${id}`, formData, {
+     headers: {
+       'Content-Type': 'multipart/form-data',
+     },
+   });
+   return response.data;
+ };
+
 export default api;

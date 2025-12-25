@@ -5,10 +5,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
 
-@Repository
 public interface WatchRepository extends JpaRepository<Watch, String> {
+    boolean existsByReferenceNumber(String referenceNumber);
     boolean existsByBrandIgnoreCaseAndModelIgnoreCase(String brand, String model);
     Page<Watch> findAllByOrderByNetVotesDesc(Pageable pageable);
     Page<Watch> findAllByOrderByCreatedAtDesc(Pageable pageable);
