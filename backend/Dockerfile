@@ -27,4 +27,4 @@ RUN ls -ltr target/
 RUN cp target/goat-watches-backend-1.0.0.jar app.jar
 
 # Run the jar
-ENTRYPOINT ["java", "-Duser.timezone=Asia/Kolkata", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java -Duser.timezone=Asia/Kolkata -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-dev} -jar app.jar"]
