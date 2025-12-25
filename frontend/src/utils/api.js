@@ -43,7 +43,7 @@ export const voteWatch = (watchId, vote) => {
 };
 
 export const deleteWatch = (id, token) => {
-  return api.delete(`/admin/watches/${id}?token=${token}`);
+  return api.delete(`/watches/${id}?token=${token}`);
 };
 
 export const deleteReview = (id, token) => {

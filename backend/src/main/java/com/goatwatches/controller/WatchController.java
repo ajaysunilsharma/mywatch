@@ -6,6 +6,7 @@ import com.goatwatches.repository.WatchRepository;
 import com.goatwatches.service.FileStorageService;
 import com.goatwatches.service.WatchService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,6 +31,9 @@ public class WatchController {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    @Value("${admin.token}")
+    private String adminToken;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getWatches(
@@ -170,7 +174,7 @@ public class WatchController {
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Watch> updateWatch(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam("brand") String brand,
             @RequestParam("model") String model,
             @RequestParam("referenceNumber") String referenceNumber,
@@ -179,7 +183,7 @@ public class WatchController {
             @RequestParam("description") String description,
             @RequestParam(value = "image", required = false) MultipartFile image) {
 
-        return watchRepository.findById(id.toString()).map(watch -> {
+        return watchRepository.findById(id).map(watch -> {
             watch.setBrand(brand);
             watch.setModel(model);
             watch.setReferenceNumber(referenceNumber);
@@ -200,6 +204,18 @@ public class WatchController {
 
             return ResponseEntity.ok(watchRepository.save(watch));
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteWatch(@PathVariable String id, @RequestParam(required = false) String token) {
+        if (token == null || !token.equals(adminToken)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Unauthorized: Invalid or missing admin token"));
+        }
+        if (watchRepository.existsById(id)) {
+            watchRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("message", "Watch deleted successfully"));
+        }
+        return ResponseEntity.notFound().build();
     }
 
 }

@@ -33,6 +33,10 @@ function Leaderboard() {
     );
   };
 
+  const handleDelete = (deletedWatchId) => {
+    setWatches(prevWatches => prevWatches.filter(w => w.id !== deletedWatchId));
+  };
+
   return (
     <div className="leaderboard">
       <div className="hero">
@@ -81,6 +85,7 @@ function Leaderboard() {
                   key={watch.id} 
                   watch={watch} 
                   onVoteUpdate={handleVoteUpdate}
+                  onDelete={handleDelete}
                 />
               ))}
             </div>
