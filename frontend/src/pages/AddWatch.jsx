@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createWatch } from '../utils/api';
+import * as mobilenet from '@tensorflow-models/mobilenet';
+import '@tensorflow/tfjs';
 import './AddWatch.css';
 
 function AddWatch() {
@@ -16,6 +18,18 @@ function AddWatch() {
   const [preview, setPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [model, setModel] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+
+  // Load the AI model on component mount
+  useEffect(() => {
+    async function loadModel() {
+      console.log('Loading AI Model...');
+      const loadedModel = await mobilenet.load();
+      setModel(loadedModel);
+    }
+    loadModel();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -24,16 +38,42 @@ function AddWatch() {
     });
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         setError('Image must be less than 5MB');
         return;
       }
-      setImage(file);
-      setPreview(URL.createObjectURL(file));
-      setError('');
+
+      setIsValidating(true);
+      setError('Verifying image with AI...');
+
+      const imgUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = imgUrl;
+
+      img.onload = async () => {
+        try {
+          const predictions = await model.classify(img);
+          // Check if any prediction relates to watches/clocks
+          const isWatch = predictions.some(p => 
+            ['watch', 'clock', 'timepiece', 'stopwatch'].some(keyword => p.className.toLowerCase().includes(keyword))
+          );
+
+          if (isWatch) {
+            setImage(file);
+            setPreview(imgUrl);
+            setError('');
+          } else {
+            setError(`This doesn't look like a watch. (AI detected: ${predictions[0].className})`);
+            setPreview(null);
+            setImage(null);
+          }
+        } finally {
+          setIsValidating(false);
+        }
+      };
     }
   };
 
@@ -147,12 +187,16 @@ function AddWatch() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="image">Image (max 5MB)</label>
+            <label htmlFor="image">
+              Image (max 5MB)
+              {!model && <span style={{ marginLeft: '8px', fontSize: '0.85em', color: '#666' }}>(Initializing AI...)</span>}
+            </label>
             <input
               type="file"
               id="image"
               accept="image/jpeg,image/jpg,image/png"
               onChange={handleImageChange}
+              disabled={!model || isValidating}
             />
             {preview && (
               <div className="image-preview">
