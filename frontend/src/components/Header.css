@@ -12,13 +12,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 2rem;
 }
 
 .logo {
   text-decoration: none;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .logo h1 {
@@ -27,10 +28,16 @@
   color: var(--primary-green);
 }
 
+.header-search {
+  flex: 1;
+  max-width: 600px;
+}
+
 .nav {
   display: flex;
   gap: 1rem;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .nav-link {
@@ -56,7 +63,18 @@
   background: #095A31;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .header-content {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-search {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+  }
+
   .logo h1 {
     font-size: 1.25rem;
   }

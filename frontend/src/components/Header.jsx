@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import SearchBar from './SearchBar';
 import './Header.css';
 
 function Header() {
@@ -9,6 +10,9 @@ function Header() {
           <Link to="/" className="logo">
             <h1>⌚ GOAT Watches</h1>
           </Link>
+          <div className="header-search">
+            <SearchBar />
+          </div>
           <nav className="nav">
             <Link to="/" className="nav-link">Home</Link>
             <Link to="/add" className="nav-link btn-primary">Add Watch</Link>

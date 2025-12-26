@@ -12,7 +12,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -51,6 +54,22 @@ public class WatchService {
         }
         return watchRepository.save(watch);
     }
+
+    public Watch createWatch(String brand, String model, Integer year, String description, String createdBy, MultipartFile image) throws IOException {
+        Watch watch = new Watch();
+        watch.setBrand(brand);
+        watch.setModel(model);
+        watch.setYear(year);
+        watch.setDescription(description);
+        watch.setCreatedBy(createdBy != null ? createdBy : "Anonymous");
+
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = fileStorageService.storeFile(image);
+            watch.setThumbnailUrl(imageUrl);
+        }
+
+        return createWatch(watch);
+    }
     
     @Transactional
     public void deleteWatch(String id) {
@@ -85,6 +104,24 @@ public class WatchService {
         watchRepository.findById(review.getWatchId())
             .orElseThrow(() -> new IllegalArgumentException("Watch not found"));
         return reviewRepository.save(review);
+    }
+
+    public Review createReview(String id, String authorName, String content, MultipartFile image) throws IOException {
+        if (content.length() > 1000) {
+            throw new IllegalArgumentException("Review must be 1000 characters or less");
+        }
+
+        Review review = new Review();
+        review.setWatchId(id);
+        review.setAuthorName(authorName != null ? authorName : "Anonymous");
+        review.setContent(content);
+
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = fileStorageService.storeFile(image);
+            review.setImageUrl(imageUrl);
+        }
+
+        return createReview(review);
     }
     
     @Transactional
@@ -134,5 +171,33 @@ public class WatchService {
         }
         
         return watchRepository.save(watch);
+    }
+
+    public Optional<Watch> updateWatch(String id, String brand, String model, String referenceNumber, Integer year, String price, String description, MultipartFile image) {
+        return watchRepository.findById(id).map(watch -> {
+            watch.setBrand(brand);
+            watch.setModel(model);
+            watch.setReferenceNumber(referenceNumber);
+            watch.setYear(year);
+            watch.setPrice(price);
+            watch.setDescription(description);
+
+            if (image != null && !image.isEmpty()) {
+                // In a real app, delete the old image if necessary
+                String imageUrl = null;
+                try {
+                    imageUrl = fileStorageService.storeFile(image);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                watch.setThumbnailUrl(imageUrl);
+            }
+
+            return watchRepository.save(watch);
+        });
+    }
+
+    public List<Watch> searchWatches(String query) {
+        return watchRepository.searchWatches(query);
     }
 }

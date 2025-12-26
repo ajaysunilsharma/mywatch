@@ -2,8 +2,6 @@ package com.goatwatches.controller;
 
 import com.goatwatches.entity.Review;
 import com.goatwatches.entity.Watch;
-import com.goatwatches.repository.WatchRepository;
-import com.goatwatches.service.FileStorageService;
 import com.goatwatches.service.WatchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -25,12 +23,6 @@ public class WatchController {
 
     @Autowired
     private WatchService watchService;
-
-    @Autowired
-    private WatchRepository watchRepository;
-
-    @Autowired
-    private FileStorageService fileStorageService;
 
     @Value("${admin.token}")
     private String adminToken;
@@ -50,6 +42,14 @@ public class WatchController {
         response.put("totalItems", watchPage.getTotalElements());
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Watch>> searchWatches(@RequestParam String query) {
+        if (query == null || query.length() < 3) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(watchService.searchWatches(query));
     }
 
     @GetMapping("/{id}")
@@ -74,19 +74,7 @@ public class WatchController {
             @RequestParam(required = false) MultipartFile image) {
 
         try {
-            Watch watch = new Watch();
-            watch.setBrand(brand);
-            watch.setModel(model);
-            watch.setYear(year);
-            watch.setDescription(description);
-            watch.setCreatedBy(createdBy != null ? createdBy : "Anonymous");
-
-            if (image != null && !image.isEmpty()) {
-                String imageUrl = fileStorageService.storeFile(image);
-                watch.setThumbnailUrl(imageUrl);
-            }
-
-            Watch savedWatch = watchService.createWatch(watch);
+            Watch savedWatch = watchService.createWatch(brand, model, year, description, createdBy, image);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedWatch);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -121,21 +109,7 @@ public class WatchController {
             @RequestParam(required = false) MultipartFile image) {
 
         try {
-            if (content.length() > 1000) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Review must be 1000 characters or less"));
-            }
-
-            Review review = new Review();
-            review.setWatchId(id);
-            review.setAuthorName(authorName != null ? authorName : "Anonymous");
-            review.setContent(content);
-
-            if (image != null && !image.isEmpty()) {
-                String imageUrl = fileStorageService.storeFile(image);
-                review.setImageUrl(imageUrl);
-            }
-
-            Review savedReview = watchService.createReview(review);
+            Review savedReview = watchService.createReview(id, authorName, content, image);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedReview);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -183,27 +157,9 @@ public class WatchController {
             @RequestParam("description") String description,
             @RequestParam(value = "image", required = false) MultipartFile image) {
 
-        return watchRepository.findById(id).map(watch -> {
-            watch.setBrand(brand);
-            watch.setModel(model);
-            watch.setReferenceNumber(referenceNumber);
-            watch.setYear(year);
-            watch.setPrice(price);
-            watch.setDescription(description);
-
-            if (image != null && !image.isEmpty()) {
-                // In a real app, delete the old image if necessary
-                String imageUrl = null;
-                try {
-                    imageUrl = fileStorageService.storeFile(image);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                watch.setThumbnailUrl(imageUrl);
-            }
-
-            return ResponseEntity.ok(watchRepository.save(watch));
-        }).orElse(ResponseEntity.notFound().build());
+        return watchService.updateWatch(id, brand, model, referenceNumber, year, price, description, image)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
@@ -211,11 +167,12 @@ public class WatchController {
         if (token == null || !token.equals(adminToken)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Unauthorized: Invalid or missing admin token"));
         }
-        if (watchRepository.existsById(id)) {
-            watchRepository.deleteById(id);
+        try {
+            watchService.deleteWatch(id);
             return ResponseEntity.ok(Map.of("message", "Watch deleted successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
     }
 
 }

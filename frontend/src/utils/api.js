@@ -17,6 +17,10 @@ export const getWatches = (sort = 'top', page = 0, size = 20) => {
   return api.get(`/watches?sort=${sort}&page=${page}&size=${size}`);
 };
 
+export const searchWatches = (query) => {
+  return api.get(`/watches/search?query=${query}`);
+};
+
 export const getWatch = (id) => {
   return api.get(`/watches/${id}`);
 };
