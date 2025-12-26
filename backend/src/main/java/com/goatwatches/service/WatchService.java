@@ -37,7 +37,7 @@ public class WatchService {
         Pageable pageable = PageRequest.of(page, size);
         
         return switch (sort != null ? sort : "top") {
-            case "new" -> watchRepository.findAllByOrderByCreatedAtDesc(pageable);
+            case "new" -> watchRepository.findAllByOrderByYearDescCreatedAtDesc(pageable);
             case "reviews" -> watchRepository.findAllOrderByReviewCountDesc(pageable);
             default -> watchRepository.findAllByOrderByNetVotesDesc(pageable);
         };

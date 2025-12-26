@@ -14,6 +14,7 @@ public interface WatchRepository extends JpaRepository<Watch, String> {
     boolean existsByBrandIgnoreCaseAndModelIgnoreCase(String brand, String model);
     Page<Watch> findAllByOrderByNetVotesDesc(Pageable pageable);
     Page<Watch> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    Page<Watch> findAllByOrderByYearDescCreatedAtDesc(Pageable pageable);
     
     @Query("SELECT w FROM Watch w LEFT JOIN Review r ON r.watchId = w.id " +
            "GROUP BY w.id ORDER BY COUNT(r.id) DESC")

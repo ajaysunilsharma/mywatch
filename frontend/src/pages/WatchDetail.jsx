@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getWatch, getReviews, createReview, voteWatch } from '../utils/api';
 import './WatchDetail.css';
 
@@ -124,9 +124,14 @@ function WatchDetail() {
   return (
     <div className="watch-detail">
       <div className="container">
-        <button onClick={() => navigate('/')} className="back-btn">
-          ← Back to Leaderboard
-        </button>
+        <div className="watch-detail-nav">
+          <button onClick={() => navigate('/')} className="back-btn">
+            ← Back to Leaderboard
+          </button>
+          <Link to={`/edit/${id}`} className="edit-btn">
+            Edit Watch
+          </Link>
+        </div>
 
         <div className="watch-detail-header">
           <div className="watch-detail-image">
