@@ -18,14 +18,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/watches")
-@CrossOrigin(origins = "*")
 public class WatchController {
 
     @Autowired
     private WatchService watchService;
-
-    @Value("${admin.token}")
-    private String adminToken;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getWatches(
@@ -163,10 +159,7 @@ public class WatchController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteWatch(@PathVariable String id, @RequestParam(required = false) String token) {
-        if (token == null || !token.equals(adminToken)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Unauthorized: Invalid or missing admin token"));
-        }
+    public ResponseEntity<?> deleteWatch(@PathVariable String id) {
         try {
             watchService.deleteWatch(id);
             return ResponseEntity.ok(Map.of("message", "Watch deleted successfully"));
