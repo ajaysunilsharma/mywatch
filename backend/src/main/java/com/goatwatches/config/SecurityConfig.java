@@ -28,10 +28,12 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/watches/**").authenticated() // Allow view only if logged in (per requirement "main app available only after signin")
-                .requestMatchers(HttpMethod.POST, "/api/watches/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/watches/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/watches/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/watches/{id}/reviews").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/watches/{id}/vote").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/watches").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/watches/{id}").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/watches/{id}").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/watches/**").authenticated()
                 .anyRequest().authenticated()
             );
         return http.build();

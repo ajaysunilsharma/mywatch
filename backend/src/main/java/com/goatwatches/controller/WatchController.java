@@ -4,8 +4,8 @@ import com.goatwatches.entity.Review;
 import com.goatwatches.entity.Watch;
 import com.goatwatches.service.WatchService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/watches")
@@ -37,7 +38,9 @@ public class WatchController {
         response.put("totalPages", watchPage.getTotalPages());
         response.put("totalItems", watchPage.getTotalElements());
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+                .body(response);
     }
 
     @GetMapping("/search")
@@ -55,7 +58,9 @@ public class WatchController {
                     Map<String, Object> response = new HashMap<>();
                     response.put("watch", watch);
                     response.put("reviewCount", watchService.getReviewCount(id));
-                    return ResponseEntity.ok(response);
+                    return ResponseEntity.ok()
+                            .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+                            .body(response);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

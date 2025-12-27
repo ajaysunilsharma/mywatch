@@ -32,6 +32,18 @@ function App() {
     checkAuth();
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:8080/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
+    setUser(null);
+  };
+
   if (loading) {
     return <div className="container">Loading...</div>;
   }
@@ -41,7 +53,7 @@ function App() {
       <div className="app">
         {user ? (
           <>
-            <Header user={user} />
+            <Header user={user} onLogout={handleLogout} />
             <Routes>
               <Route path="/" element={<Leaderboard user={user} />} />
               <Route path="/add" element={<AddWatch />} />
