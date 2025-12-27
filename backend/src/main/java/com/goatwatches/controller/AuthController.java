@@ -46,6 +46,9 @@ public class AuthController {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, servletRequest, servletResponse);
+
+        // Bind the session to the User-Agent to prevent hijacking
+        servletRequest.getSession().setAttribute("USER_AGENT", servletRequest.getHeader("User-Agent"));
         
         return ResponseEntity.ok(Map.of("message", "Login successful"));
     }
