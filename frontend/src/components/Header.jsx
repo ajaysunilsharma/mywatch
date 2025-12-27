@@ -16,6 +16,7 @@ function Header({ user, onLogout }) {
           <nav className="nav">
             <Link to="/" className="nav-link">Home</Link>
             {user && user.role === 'ROLE_ADMIN' && <Link to="/add" className="nav-link btn-primary">Add Watch</Link>}
+            <span className="nav-link">{user.username}</span>
             <button onClick={onLogout} className="nav-link" style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 'inherit', fontFamily: 'inherit', color: 'inherit' }}>Logout</button>
           </nav>
         </div>
