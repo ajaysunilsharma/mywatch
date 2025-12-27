@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -16,6 +17,8 @@ import java.io.IOException;
 public class SessionValidationFilter extends OncePerRequestFilter {
 
     private final Logger logger = LoggerFactory.getLogger(SessionValidationFilter.class);
+    
+    private final SecurityContextLogoutHandler logoutHandler = new SecurityContextLogoutHandler();
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
@@ -25,8 +28,7 @@ public class SessionValidationFilter extends OncePerRequestFilter {
 
             if (loginUserAgent != null && !loginUserAgent.equals(currentUserAgent)) {
                 logger.error("Session hijacking detected - invalidating session");
-                session.invalidate();
-                SecurityContextHolder.clearContext();
+                logoutHandler.logout(request, response, SecurityContextHolder.getContext().getAuthentication());
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Session hijacking detected: User-Agent mismatch");
                 return;
             }
