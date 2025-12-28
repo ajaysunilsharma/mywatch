@@ -6,17 +6,16 @@ const API_URL = import.meta.env.VITE_API_URL;
 function Signup() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('USER');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${API_URL}/api/auth/signup`, {
+      const response = await fetch(`${API_URL}/api/auth/user/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role }),
+        body: JSON.stringify({ username, password }),
       });
 
       if (response.ok) {
@@ -42,13 +41,6 @@ function Signup() {
         <div className="form-group">
           <label>Password</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
-        </div>
-        <div className="form-group">
-          <label>Role</label>
-          <select value={role} onChange={e => setRole(e.target.value)} style={{ width: '100%', padding: '0.5rem' }}>
-            <option value="USER">User</option>
-            <option value="ADMIN">Admin</option>
-          </select>
         </div>
         <button type="submit" className="btn-primary" style={{ width: '100%' }}>Create Account</button>
       </form>

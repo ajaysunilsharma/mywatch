@@ -53,7 +53,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Login successful"));
     }
 
-    @PostMapping("/signup")
+    @PostMapping("/user/signup")
     public ResponseEntity<?> signup(@RequestBody AuthRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
@@ -62,13 +62,22 @@ public class AuthController {
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         
-        if (request.getRole() != null && request.getRole().equalsIgnoreCase("ADMIN")) {
-            user.setRole("ADMIN");
-        } else {
-            user.setRole("USER");
-        }
+        user.setRole("USER");
         userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "User registered successfully"));
+    }
+
+    @PostMapping("/admin/signup")
+    public ResponseEntity<?> adminSignup(@RequestBody AuthRequest request) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
+        }
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole("ADMIN");
+        userRepository.save(user);
+        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Admin registered successfully"));
     }
 
     @GetMapping("/me")
