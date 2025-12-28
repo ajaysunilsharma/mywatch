@@ -146,30 +146,33 @@ public class WatchService {
             .orElseThrow(() -> new IllegalArgumentException("Watch not found"));
         
         Optional<Vote> existingVote = voteRepository.findByWatchIdAndVoterToken(watchId, voterToken);
+        Vote vote = null;
         
         if (existingVote.isPresent()) {
-            Vote vote = existingVote.get();
+            vote = existingVote.get();
             int oldValue = vote.getVoteValue();
-            
+
+            // upvoting after an upvote or downvoting after a downvote
             if (oldValue == voteValue) {
                 return watch;
             }
-            
-            vote.setVoteValue(voteValue);
-            voteRepository.save(vote);
-            
-            int netChange = voteValue - oldValue;
-            watch.setNetVotes(watch.getNetVotes() + netChange);
+
+            int finalVoteCountForUser = oldValue + voteValue;
+            vote.setVoteValue(finalVoteCountForUser);
+            if(finalVoteCountForUser == 0){
+                // 0 vote entries are not saved
+                voteRepository.deleteById(vote.getId());
+            }else{
+                voteRepository.save(vote);
+            }
         } else {
-            Vote vote = new Vote();
+            vote = new Vote();
             vote.setWatchId(watchId);
             vote.setVoterToken(voterToken);
             vote.setVoteValue(voteValue);
             voteRepository.save(vote);
-            
-            watch.setNetVotes(watch.getNetVotes() + voteValue);
         }
-        
+        watch.setNetVotes(watch.getNetVotes() + voteValue);
         return watchRepository.save(watch);
     }
 

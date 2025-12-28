@@ -9,9 +9,11 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,21 +125,17 @@ public class WatchController {
     @PostMapping("/{id}/vote")
     public ResponseEntity<?> vote(
             @PathVariable String id,
-            @RequestBody Map<String, Object> voteRequest) {
+            @RequestBody Map<String, Object> voteRequest,
+            Principal principal) {
 
         try {
             int vote = (Integer) voteRequest.get("vote");
-            String voterToken = (String) voteRequest.get("voterToken");
 
             if (vote != 1 && vote != -1) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Vote must be 1 or -1"));
             }
 
-            if (voterToken == null || voterToken.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Voter token required"));
-            }
-
-            Watch updatedWatch = watchService.vote(id, voterToken, vote);
+            Watch updatedWatch = watchService.vote(id, principal.getName(), vote);
             return ResponseEntity.ok(updatedWatch);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
