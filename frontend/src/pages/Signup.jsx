@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import validator from 'validator';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -11,6 +12,18 @@ function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validator.isStrongPassword(password, {
+      minLength: 8, 
+      minLowercase: 1, 
+      minUppercase: 1, 
+      minNumbers: 1, 
+      minSymbols: 1 
+    })) {
+      setError('Password must be at least 8 characters long and include 1 uppercase, 1 lowercase, 1 number, and 1 symbol.');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/api/auth/user/signup`, {
         method: 'POST',
