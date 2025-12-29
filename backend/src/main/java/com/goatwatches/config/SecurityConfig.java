@@ -33,7 +33,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .addFilterAfter(new SessionValidationFilter(), SecurityContextHolderFilter.class)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login", "/api/auth/user/signup", "/api/auth/admin/signup").anonymous()
+                .requestMatchers("/api/auth/login", "/api/auth/user/signup", "/api/auth/admin/signup", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/reset-password/validate").anonymous()
                 .requestMatchers(HttpMethod.POST, "/api/watches/{id}/reviews").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/watches/{id}/vote").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/watches").hasRole("ADMIN")

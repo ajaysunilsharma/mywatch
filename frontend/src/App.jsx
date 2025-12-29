@@ -7,6 +7,7 @@ import EditWatch from './pages/EditWatch';
 import WatchDetail from './pages/WatchDetail';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ResetPassword from './pages/ResetPassword';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -68,6 +69,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<Navigate to="/login" />} />
           </Routes>
         )}

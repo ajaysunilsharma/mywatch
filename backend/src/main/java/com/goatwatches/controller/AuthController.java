@@ -20,6 +20,9 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,6 +32,9 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+    
+    // In-memory token store. In production, store this in the database with an expiry.
+    private final Map<String, String> passwordResetTokens = new ConcurrentHashMap<>();
 
     public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
@@ -38,8 +44,18 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+        String loginIdentifier = request.getUsername(); // Can be username or email
+        String resolvedUsername = loginIdentifier;
+
+        // If input looks like an email, try to find the username
+        if (loginIdentifier.contains("@")) {
+            resolvedUsername = userRepository.findByEmail(loginIdentifier)
+                    .map(User::getUsername)
+                    .orElse(loginIdentifier); // Fallback to let auth manager fail naturally
+        }
+
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(resolvedUsername, request.getPassword())
         );
         
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -54,13 +70,18 @@ public class AuthController {
     }
 
     @PostMapping("/user/signup")
-    public ResponseEntity<?> signup(@RequestBody AuthRequest request) {
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
+    public ResponseEntity<?> signup(@RequestBody Map<String, String> request) {
+        if (userRepository.findByEmail(request.get("email")).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("field", "email", "error", "Email already taken. Please Sign in or reset password."));
         }
+        if (userRepository.findByUsername(request.get("username")).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("field", "username", "error", "Username not available"));
+        }
+
         User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setUsername(request.get("username"));
+        user.setEmail(request.get("email"));
+        user.setPassword(passwordEncoder.encode(request.get("password")));
         
         user.setRole("USER");
         userRepository.save(user);
@@ -68,13 +89,17 @@ public class AuthController {
     }
 
     @PostMapping("/admin/signup")
-    public ResponseEntity<?> adminSignup(@RequestBody AuthRequest request) {
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
+    public ResponseEntity<?> adminSignup(@RequestBody Map<String, String> request) {
+        if (userRepository.findByEmail(request.get("email")).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email already taken"));
+        }
+        if (userRepository.findByUsername(request.get("username")).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Username not available"));
         }
         User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setUsername(request.get("username"));
+        user.setEmail(request.get("email"));
+        user.setPassword(passwordEncoder.encode(request.get("password")));
         user.setRole("ADMIN");
         userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "Admin registered successfully"));
@@ -95,5 +120,55 @@ public class AuthController {
             new SecurityContextLogoutHandler().logout(request, response, authentication);
         }
         return ResponseEntity.ok(Map.of("message", "Logged out"));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String identifier = request.get("email"); // Frontend sends 'email' key, but it could be username
+        
+        Optional<User> userOpt = userRepository.findByEmail(identifier);
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByUsername(identifier);
+        }
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            String token = UUID.randomUUID().toString();
+            passwordResetTokens.put(token, user.getEmail()); // Store actual email mapped to token
+            
+            // Simulating email sending by printing to console
+            System.out.println("------------------------------------------------");
+            System.out.println("PASSWORD RESET LINK FOR " + user.getEmail() + ":");
+            System.out.println("http://localhost:5000/reset-password?token=" + token);
+            System.out.println("------------------------------------------------");
+        }
+        return ResponseEntity.ok(Map.of("message", "If an account exists, a reset link has been sent."));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("newPassword");
+        
+        String email = passwordResetTokens.remove(token);
+        if (email == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired token"));
+        }
+        
+        User user = userRepository.findByEmail(email).orElseThrow();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        
+        return ResponseEntity.ok(Map.of("message", "Password successfully reset"));
+    }
+
+    @GetMapping("/reset-password/validate")
+    public ResponseEntity<?> validateResetToken(@RequestParam String token) {
+        String email = passwordResetTokens.get(token);
+        if (email == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired token"));
+        }
+        User user = userRepository.findByEmail(email).orElseThrow();
+        return ResponseEntity.ok(Map.of("username", user.getUsername(), "email", user.getEmail()));
     }
 }
