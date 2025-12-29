@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
@@ -31,15 +33,17 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JavaMailSender mailSender;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
     
     // In-memory token store. In production, store this in the database with an expiry.
     private final Map<String, String> passwordResetTokens = new ConcurrentHashMap<>();
 
-    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.mailSender = mailSender;
     }
 
     @PostMapping("/login")
@@ -136,13 +140,14 @@ public class AuthController {
             String token = UUID.randomUUID().toString();
             passwordResetTokens.put(token, user.getEmail()); // Store actual email mapped to token
             
-            // Simulating email sending by printing to console
-            System.out.println("------------------------------------------------");
-            System.out.println("PASSWORD RESET LINK FOR " + user.getEmail() + ":");
-            System.out.println("http://localhost:5000/reset-password?token=" + token);
-            System.out.println("------------------------------------------------");
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("noreply@apexdial.com");
+            message.setTo(user.getEmail());
+            message.setSubject("Password Reset Request");
+            message.setText("To reset your password, click the link below:\n" + "http://localhost:5000/reset-password?token=" + token);
+            mailSender.send(message);
         }
-        return ResponseEntity.ok(Map.of("message", "If an account exists, a reset link has been sent."));
+        return ResponseEntity.ok(Map.of("message", "reset link has been sent to your registered email address"));
     }
 
     @PostMapping("/reset-password")
