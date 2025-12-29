@@ -5,6 +5,7 @@ import com.goatwatches.entity.User;
 import com.goatwatches.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,6 +22,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +40,9 @@ public class AuthController {
     
     // In-memory token store. In production, store this in the database with an expiry.
     private final Map<String, String> passwordResetTokens = new ConcurrentHashMap<>();
+
+    @Value("${app.frontend.url:http://localhost:5000}")
+    private List<String> frontendUrls;
 
     public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender) {
         this.authenticationManager = authenticationManager;
@@ -144,7 +149,8 @@ public class AuthController {
             message.setFrom("noreply@apexdial.com");
             message.setTo(user.getEmail());
             message.setSubject("Password Reset Request");
-            message.setText("To reset your password, click the link below:\n" + "http://localhost:5000/reset-password?token=" + token);
+            String baseUrl = (frontendUrls != null && !frontendUrls.isEmpty()) ? frontendUrls.get(0) : "http://localhost:5000";
+            message.setText("To reset your password, click the link below:\n" + baseUrl + "/reset-password?token=" + token);
             mailSender.send(message);
         }
         return ResponseEntity.ok(Map.of("message", "reset link has been sent to your registered email address"));
