@@ -4,28 +4,27 @@ import com.goatwatches.entity.Review;
 import com.goatwatches.entity.Watch;
 import com.goatwatches.service.WatchService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/watches")
-@CrossOrigin(origins = "*")
 public class WatchController {
 
     @Autowired
     private WatchService watchService;
-
-    @Value("${admin.token}")
-    private String adminToken;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getWatches(
@@ -41,7 +40,9 @@ public class WatchController {
         response.put("totalPages", watchPage.getTotalPages());
         response.put("totalItems", watchPage.getTotalElements());
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+                .body(response);
     }
 
     @GetMapping("/search")
@@ -59,7 +60,9 @@ public class WatchController {
                     Map<String, Object> response = new HashMap<>();
                     response.put("watch", watch);
                     response.put("reviewCount", watchService.getReviewCount(id));
-                    return ResponseEntity.ok(response);
+                    return ResponseEntity.ok()
+                            .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+                            .body(response);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -122,21 +125,17 @@ public class WatchController {
     @PostMapping("/{id}/vote")
     public ResponseEntity<?> vote(
             @PathVariable String id,
-            @RequestBody Map<String, Object> voteRequest) {
+            @RequestBody Map<String, Object> voteRequest,
+            Principal principal) {
 
         try {
             int vote = (Integer) voteRequest.get("vote");
-            String voterToken = (String) voteRequest.get("voterToken");
 
             if (vote != 1 && vote != -1) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Vote must be 1 or -1"));
             }
 
-            if (voterToken == null || voterToken.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Voter token required"));
-            }
-
-            Watch updatedWatch = watchService.vote(id, voterToken, vote);
+            Watch updatedWatch = watchService.vote(id, principal.getName(), vote);
             return ResponseEntity.ok(updatedWatch);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -163,10 +162,7 @@ public class WatchController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteWatch(@PathVariable String id, @RequestParam(required = false) String token) {
-        if (token == null || !token.equals(adminToken)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Unauthorized: Invalid or missing admin token"));
-        }
+    public ResponseEntity<?> deleteWatch(@PathVariable String id) {
         try {
             watchService.deleteWatch(id);
             return ResponseEntity.ok(Map.of("message", "Watch deleted successfully"));
