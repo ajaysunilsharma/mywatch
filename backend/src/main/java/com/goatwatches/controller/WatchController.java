@@ -41,7 +41,6 @@ public class WatchController {
         response.put("totalItems", watchPage.getTotalElements());
 
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
                 .body(response);
     }
 
