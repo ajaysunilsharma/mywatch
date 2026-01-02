@@ -52,22 +52,6 @@ public class AuthService {
         this.mailSender = mailSender;
     }
 
-    public AuthResponse login(AuthRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
-        
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, servletRequest, servletResponse);
-
-        // Bind the session to the User-Agent to prevent hijacking
-        servletRequest.getSession().setAttribute("USER_AGENT", servletRequest.getHeader("User-Agent"));
-        
-        return new AuthResponse("Login successful");
-    }
-
     public AuthResponse signup(Map<String, String> request) {
         if (userRepository.findByEmail(request.get("email")).isPresent()) {
             throw new AuthException("email", "Email already taken. Please Sign in or reset password.");

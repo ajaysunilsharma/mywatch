@@ -1,6 +1,5 @@
 package com.goatwatches.controller;
 
-import com.goatwatches.dto.AuthRequest;
 import com.goatwatches.dto.AuthResponse;
 import com.goatwatches.exception.AuthException;
 import com.goatwatches.service.AuthService;
@@ -21,11 +20,6 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
-        return ResponseEntity.ok(authService.login(request, servletRequest, servletResponse));
     }
 
     @PostMapping("/user/signup")
