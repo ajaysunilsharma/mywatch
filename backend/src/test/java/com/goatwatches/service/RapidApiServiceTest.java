@@ -28,10 +28,10 @@ public class RapidApiServiceTest {
     }
 
     @Test
-    public void testSearchWatch() {
+    public void testSearchWatchByName() {
         SearchWatchPayload payload = new SearchWatchPayload("Casio", 1, 10);
 
-        SearchWatchResponse response = rapidApiService.searchWatch(payload);
+        SearchWatchResponse response = rapidApiService.searchWatchByName(payload);
         assertNotNull(response);
         assertFalse(response.getWatches().isEmpty());
         assertNotNull(response.getWatches().getFirst());
