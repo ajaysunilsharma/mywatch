@@ -141,12 +141,6 @@ public class AuthService {
         return new AuthResponse("Signup completed");
     }
 
-    public AuthResponse logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        if (authentication != null) {
-            new SecurityContextLogoutHandler().logout(request, response, authentication);
-        }
-        return new AuthResponse("Logged out");
-    }
 
     public AuthResponse forgotPassword(Map<String, String> request) {
         String identifier = request.get("email"); // Frontend sends 'email' key, but it could be username
