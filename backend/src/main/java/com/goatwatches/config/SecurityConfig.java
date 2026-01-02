@@ -83,7 +83,12 @@ public class SecurityConfig {
                     String baseUrl = (frontendUrls != null && !frontendUrls.isEmpty()) ? frontendUrls.get(0) : "http://localhost:5000";
                     response.sendRedirect(baseUrl + "/login?error");
                 })
-            );
+            ).logout(logout -> logout.logoutUrl("/api/auth/logout")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json");
+                            response.getWriter().write(objectMapper.writeValueAsString(java.util.Map.of("message", "Logged out successfully")));
+                        }).deleteCookies("SESSION", "JSESSIONID"));
             
         return http.build();
     }
