@@ -1,9 +1,10 @@
 package com.goatwatches.service;
 
-import com.goatwatches.dto.AuthRequest;
 import com.goatwatches.dto.AuthResponse;
+import com.goatwatches.entity.PasswordResetToken;
 import com.goatwatches.entity.User;
 import com.goatwatches.exception.AuthException;
+import com.goatwatches.repository.PasswordResetTokenRepository;
 import com.goatwatches.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,6 +21,8 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,22 +32,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
-    
-    // In-memory token store. In production, store this in the database with an expiry.
-    private final Map<String, String> passwordResetTokens = new ConcurrentHashMap<>();
+    private final PasswordResetTokenRepository tokenRepository;
 
     @Value("${app.frontend.url:http://localhost:5000}")
     private List<String> frontendUrls;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JavaMailSender mailSender, PasswordResetTokenRepository tokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
+        this.tokenRepository = tokenRepository;
     }
 
     public AuthResponse signup(Map<String, String> request) {
@@ -133,7 +133,6 @@ public class AuthService {
 
         // Bind the session to the User-Agent
         servletRequest.getSession().setAttribute("USER_AGENT", servletRequest.getHeader("User-Agent"));
-        
         return new AuthResponse("Signup completed");
     }
 
@@ -141,15 +140,13 @@ public class AuthService {
     public AuthResponse forgotPassword(Map<String, String> request) {
         String identifier = request.get("email"); // Frontend sends 'email' key, but it could be username
         
-        Optional<User> userOpt = userRepository.findByEmail(identifier);
-        if (userOpt.isEmpty()) {
-            userOpt = userRepository.findByUsername(identifier);
-        }
-
+        Optional<User> userOpt = userRepository.findByUsernameOrEmail(identifier, identifier);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             String token = UUID.randomUUID().toString();
-            passwordResetTokens.put(token, user.getEmail()); // Store actual email mapped to token
+
+            PasswordResetToken resetToken = new PasswordResetToken(token, user, Instant.now().plus(24, ChronoUnit.HOURS));
+            tokenRepository.save(resetToken);
             
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom("noreply@apexdial.com");
@@ -166,24 +163,32 @@ public class AuthService {
         String token = request.get("token");
         String newPassword = request.get("newPassword");
         
-        String email = passwordResetTokens.remove(token);
-        if (email == null) {
+        PasswordResetToken resetToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new AuthException("Invalid or expired token"));
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
+            tokenRepository.delete(resetToken);
             throw new AuthException("Invalid or expired token");
         }
         
-        User user = userRepository.findByEmail(email).orElseThrow();
+        User user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        tokenRepository.delete(resetToken);
         
         return new AuthResponse("Password successfully reset");
     }
 
     public AuthResponse validateResetToken(String token) {
-        String email = passwordResetTokens.get(token);
-        if (email == null) {
+        PasswordResetToken resetToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new AuthException("Invalid or expired token"));
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
+            tokenRepository.delete(resetToken);
             throw new AuthException("Invalid or expired token");
         }
-        User user = userRepository.findByEmail(email).orElseThrow();
+        
+        User user = resetToken.getUser();
         return new AuthResponse(user.getUsername(), user.getEmail(), null);
     }
 }
