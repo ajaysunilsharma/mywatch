@@ -62,6 +62,7 @@ function App() {
               <Route path="/add" element={<AddWatch />} />
               <Route path="/edit/:id" element={<EditWatch />} />
               <Route path="/watch/:id" element={<WatchDetail user={user} />} />
+              <Route path="/health" element={<div>OK</div>} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </>
