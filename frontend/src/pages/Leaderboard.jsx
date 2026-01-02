@@ -55,17 +55,17 @@ function Leaderboard({ user }) {
             >
               Top Rated
             </button>
-            <button 
-              className={sort === 'new' ? 'sort-btn active' : 'sort-btn'}
-              onClick={() => { setSort('new'); setPage(0); }}
-            >
-              Newest
-            </button>
-            <button 
+            <button
               className={sort === 'reviews' ? 'sort-btn active' : 'sort-btn'}
               onClick={() => { setSort('reviews'); setPage(0); }}
             >
               Most Reviewed
+            </button>
+            <button
+              className={sort === 'all' ? 'sort-btn active' : 'sort-btn'}
+              onClick={() => { setSort('all'); setPage(0); }}
+            >
+              All Watches
             </button>
           </div>
         </div>
@@ -74,8 +74,8 @@ function Leaderboard({ user }) {
           <div className="loading">Loading watches...</div>
         ) : watches.length === 0 ? (
           <div className="empty-state">
-            <h2>No watches yet!</h2>
-            <p>Be the first to add a watch to the leaderboard.</p>
+            <h2>No watches found!</h2>
+            <p>Try changing the filter or add a new watch.</p>
           </div>
         ) : (
           <>

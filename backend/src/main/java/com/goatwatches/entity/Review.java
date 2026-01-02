@@ -1,9 +1,14 @@
 package com.goatwatches.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "reviews")
 public class Review {
@@ -34,22 +39,4 @@ public class Review {
             createdAt = LocalDateTime.now();
         }
     }
-    
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-    
-    public String getWatchId() { return watchId; }
-    public void setWatchId(String watchId) { this.watchId = watchId; }
-    
-    public String getAuthorName() { return authorName; }
-    public void setAuthorName(String authorName) { this.authorName = authorName; }
-    
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-    
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

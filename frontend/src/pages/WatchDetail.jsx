@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getWatch, getReviews, createReview, voteWatch } from '../utils/api';
+import { loadModel, validateWatchImage } from '../utils/imageValidator';
 import './WatchDetail.css';
 
 function WatchDetail({ user }) {
@@ -20,10 +21,14 @@ function WatchDetail({ user }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [voting, setVoting] = useState(false);
+  const fileInputRef = useRef(null);
+  const [modelReady, setModelReady] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
   useEffect(() => {
     loadWatch();
     loadReviews();
+    loadModel().then(() => setModelReady(true));
   }, [id, reviewPage]);
 
   const loadWatch = async () => {
@@ -69,15 +74,25 @@ function WatchDetail({ user }) {
     });
   };
 
-  const handleReviewImageChange = (e) => {
+  const handleReviewImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image must be less than 5MB');
-        return;
+      setIsValidating(true);
+      setError(''); // Clear previous errors
+
+      const result = await validateWatchImage(file);
+
+      if (result.isValid) {
+        setReviewImage(file);
+        setError('');
+      } else {
+        setError(result.error);
+        setReviewImage(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
-      setReviewImage(file);
-      setError('');
+      setIsValidating(false);
     }
   };
 
@@ -101,10 +116,14 @@ function WatchDetail({ user }) {
       
       setReviewForm({ content: '' });
       setReviewImage(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       setReviewPage(0);
       loadReviews();
       loadWatch();
     } catch (err) {
+      console.error('Review submission error:', err);
       setError(err.response?.data?.error || 'Failed to submit review');
     } finally {
       setSubmitting(false);
@@ -193,14 +212,21 @@ function WatchDetail({ user }) {
               </div>
 
               <div className="form-group">
+                <label htmlFor="review-image">
+                  Attach Image (Optional)
+                  {!modelReady && <span style={{ marginLeft: '8px', fontSize: '0.85em', color: '#666' }}>(Initializing AI...)</span>}
+                </label>
                 <input
                   type="file"
+                  id="review-image"
                   accept="image/jpeg,image/jpg,image/png"
                   onChange={handleReviewImageChange}
+                  ref={fileInputRef}
+                  disabled={!modelReady || isValidating}
                 />
               </div>
 
-              <button type="submit" disabled={submitting} className="btn-primary">
+              <button type="submit" disabled={submitting || isValidating} className="btn-primary">
                 {submitting ? 'Submitting...' : 'Submit Review'}
               </button>
             </form>

@@ -1,9 +1,14 @@
 package com.goatwatches.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "votes")
 public class Vote {
@@ -31,19 +36,5 @@ public class Vote {
             createdAt = LocalDateTime.now();
         }
     }
-    
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
-    
-    public String getWatchId() { return watchId; }
-    public void setWatchId(String watchId) { this.watchId = watchId; }
-    
-    public String getVoterToken() { return voterToken; }
-    public void setVoterToken(String voterToken) { this.voterToken = voterToken; }
-    
-    public Integer getVoteValue() { return voteValue; }
-    public void setVoteValue(Integer voteValue) { this.voteValue = voteValue; }
-    
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
 }

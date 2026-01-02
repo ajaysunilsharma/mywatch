@@ -92,36 +92,102 @@
   gap: 0.5rem;
 }
 
+.vote-pill {
+  display: flex;
+  align-items: center;
+  background-color: var(--gray-200);
+  border-radius: 20px;
+  padding: 2px;
+  padding-right: 10px;
+}
+
 .vote-btn {
-  background: white;
+  background: transparent;
+  color: var(--gray-600);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.vote-btn.vote-up {
   color: var(--primary-green);
-  border: 2px solid var(--gray-200);
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  font-size: 1.25rem;
+}
+
+.vote-btn.vote-down {
+  color: #DC2626;
+}
+
+.vote-btn:hover:not(:disabled) {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.vote-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vote-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-left: 4px;
+  min-width: 15px;
+  text-align: center;
+}
+
+.vote-count.up {
+  color: var(--primary-green);
+}
+
+.vote-count.down {
+  color: #DC2626; /* Red for downvotes */
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.review-count-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 2px;
+  padding-right: 10px;
+  background-color: var(--gray-200);
+  color: var(--gray-700);
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.review-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
 }
 
-.vote-btn:hover:not(:disabled) {
-  border-color: var(--primary-green);
-  background: var(--primary-green);
-  color: white;
+.review-count-badge:hover .review-icon {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.vote-btn:disabled {
-  opacity: 0.5;
-}
-
-.vote-count {
-  font-size: 1.25rem;
-  font-weight: 600;
+.review-count-badge:hover {
   color: var(--primary-green);
-  min-width: 50px;
-  text-align: center;
 }
 
 .delete-btn {
