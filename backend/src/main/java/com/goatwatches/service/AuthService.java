@@ -8,6 +8,8 @@ import com.goatwatches.repository.PasswordResetTokenRepository;
 import com.goatwatches.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -20,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -28,10 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class AuthService {
+
+    private final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender mailSender;
@@ -136,27 +142,40 @@ public class AuthService {
         return new AuthResponse("Signup completed");
     }
 
-
+    @Transactional
     public AuthResponse forgotPassword(Map<String, String> request) {
         String identifier = request.get("email"); // Frontend sends 'email' key, but it could be username
         
         Optional<User> userOpt = userRepository.findByUsernameOrEmail(identifier, identifier);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            Optional<PasswordResetToken> existingToken = tokenRepository.findByUser(user);
+            // invalidate existing token and create a new one
+            existingToken.ifPresent(t -> {
+                tokenRepository.delete(t);
+                tokenRepository.flush();
+            });
             String token = UUID.randomUUID().toString();
-
             PasswordResetToken resetToken = new PasswordResetToken(token, user, Instant.now().plus(24, ChronoUnit.HOURS));
             tokenRepository.save(resetToken);
-            
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("noreply@apexdial.com");
-            message.setTo(user.getEmail());
-            message.setSubject("Password Reset Request");
-            String baseUrl = (frontendUrls != null && !frontendUrls.isEmpty()) ? frontendUrls.get(0) : "http://localhost:5000";
-            message.setText("To reset your password, click the link below:\n" + baseUrl + "/reset-password?token=" + token);
-            mailSender.send(message);
+
+            // Send email asynchronously to improve response time
+            CompletableFuture.runAsync(() -> {
+                try {
+                    SimpleMailMessage message = new SimpleMailMessage();
+                    message.setFrom("noreply@apexdial.com");
+                    message.setTo(user.getEmail());
+                    message.setSubject("Password Reset Request");
+                    String baseUrl = (frontendUrls != null && !frontendUrls.isEmpty()) ? frontendUrls.get(0) : "http://localhost:5000";
+                    message.setText("To reset your password, click the link below:\n" + baseUrl + "/reset-password?token=" + token);
+                    mailSender.send(message);
+                } catch (Exception e) {
+                    // Log error but don't fail the request
+                    logger.error("Failed to send password reset email", e);
+                }
+            });
         }
-        return new AuthResponse("reset link has been sent to your registered email address");
+        return new AuthResponse("Reset link has been sent to your registered email address");
     }
 
     public AuthResponse resetPassword(Map<String, String> request) {
