@@ -40,7 +40,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(csrf -> csrf.disable())
+            .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/user/signup", "/api/auth/admin/signup", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/reset-password/validate", "/api/auth/oauth/complete-signup").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/watches/{id}/reviews").authenticated()
