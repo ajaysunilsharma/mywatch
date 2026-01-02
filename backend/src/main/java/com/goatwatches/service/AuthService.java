@@ -1,6 +1,10 @@
 package com.goatwatches.service;
 
 import com.goatwatches.dto.AuthResponse;
+import com.goatwatches.dto.ForgotPasswordRequest;
+import com.goatwatches.dto.OAuthSignupRequest;
+import com.goatwatches.dto.ResetPasswordRequest;
+import com.goatwatches.dto.SignupRequest;
 import com.goatwatches.entity.PasswordResetToken;
 import com.goatwatches.entity.User;
 import com.goatwatches.exception.AuthException;
@@ -54,35 +58,35 @@ public class AuthService {
         this.tokenRepository = tokenRepository;
     }
 
-    public AuthResponse signup(Map<String, String> request) {
-        if (userRepository.findByEmail(request.get("email")).isPresent()) {
+    public AuthResponse signup(SignupRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new AuthException("email", "Email already taken. Please Sign in or reset password.");
         }
-        if (userRepository.findByUsername(request.get("username")).isPresent()) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new AuthException("username", "Username not available");
         }
 
         User user = new User();
-        user.setUsername(request.get("username"));
-        user.setEmail(request.get("email"));
-        user.setPassword(passwordEncoder.encode(request.get("password")));
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         
         user.setRole("USER");
         userRepository.save(user);
         return new AuthResponse("User registered successfully");
     }
 
-    public AuthResponse adminSignup(Map<String, String> request) {
-        if (userRepository.findByEmail(request.get("email")).isPresent()) {
+    public AuthResponse adminSignup(SignupRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new AuthException("Email already taken");
         }
-        if (userRepository.findByUsername(request.get("username")).isPresent()) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new AuthException("Username not available");
         }
         User user = new User();
-        user.setUsername(request.get("username"));
-        user.setEmail(request.get("email"));
-        user.setPassword(passwordEncoder.encode(request.get("password")));
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole("ADMIN");
         userRepository.save(user);
         return new AuthResponse("Admin registered successfully");
@@ -113,8 +117,8 @@ public class AuthService {
         }).orElseThrow(() -> new AuthException("User not found"));
     }
 
-    public AuthResponse completeOAuthSignup(Map<String, String> request, Authentication authentication, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
-        String username = request.get("username");
+    public AuthResponse completeOAuthSignup(OAuthSignupRequest request, Authentication authentication, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+        String username = request.getUsername();
         String email = authentication.getName(); // In PRE_AUTH state, name is the email
 
         if (userRepository.findByUsername(username).isPresent()) {
@@ -143,8 +147,8 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponse forgotPassword(Map<String, String> request) {
-        String identifier = request.get("email"); // Frontend sends 'email' key, but it could be username
+    public AuthResponse forgotPassword(ForgotPasswordRequest request) {
+        String identifier = request.getEmail(); // Frontend sends 'email' key, but it could be username
         
         Optional<User> userOpt = userRepository.findByUsernameOrEmail(identifier, identifier);
         if (userOpt.isPresent()) {
@@ -178,9 +182,9 @@ public class AuthService {
         return new AuthResponse("Reset link has been sent to your registered email address");
     }
 
-    public AuthResponse resetPassword(Map<String, String> request) {
-        String token = request.get("token");
-        String newPassword = request.get("newPassword");
+    public AuthResponse resetPassword(ResetPasswordRequest request) {
+        String token = request.getToken();
+        String newPassword = request.getNewPassword();
         
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
                 .orElseThrow(() -> new AuthException("Invalid or expired token"));
