@@ -24,13 +24,27 @@ function Signup() {
     return longEnough || complexEnough;
   };
 
+  const isEmailValid = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFieldErrors({});
     setError('');
     
+    const errors = {};
+    if (!isEmailValid(email)) {
+      errors.email = 'Please enter a valid email address.';
+    }
+    if (username.length < 3) {
+      errors.username = 'Username must be at least 3 characters long.';
+    }
     if (!isPasswordStrong(password)) {
-      setError('Password must be at least 15 characters OR at least 8 characters including a number and a lowercase letter.');
+      errors.password = 'Password must be at least 15 characters OR at least 8 characters including a number and a lowercase letter.';
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -102,6 +116,7 @@ function Signup() {
               {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
             </button>
           </div>
+          {fieldErrors.password && <div className="error-message" style={{fontSize: '0.85rem', marginTop: '0.25rem'}}>{fieldErrors.password}</div>}
         </div>
         <button type="submit" className="btn-primary" style={{ width: '100%' }}>Create Account</button>
       </form>
