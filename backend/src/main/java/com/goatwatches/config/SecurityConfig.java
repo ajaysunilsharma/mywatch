@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,6 +40,7 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
+            .addFilterAfter(new SessionValidationFilter(), SecurityContextHolderFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/user/signup", "/api/auth/admin/signup", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/reset-password/validate", "/api/auth/oauth/complete-signup").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/watches/{id}/reviews").authenticated()
@@ -56,6 +56,9 @@ public class SecurityConfig {
                     .oidcUserService(customOidcUserService)
                 )
                 .successHandler((request, response, authentication) -> {
+                    // Bind session to User-Agent to prevent hijacking
+                    request.getSession().setAttribute("USER_AGENT", request.getHeader("User-Agent"));
+
                     boolean isPreAuth = authentication.getAuthorities().stream()
                         .anyMatch(a -> a.getAuthority().equals("ROLE_PRE_AUTH"));
                     

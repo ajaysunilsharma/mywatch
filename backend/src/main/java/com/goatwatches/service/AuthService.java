@@ -53,18 +53,8 @@ public class AuthService {
     }
 
     public AuthResponse login(AuthRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
-        String loginIdentifier = request.getUsername(); // Can be username or email
-        String resolvedUsername = loginIdentifier;
-
-        // If input looks like an email, try to find the username
-        if (loginIdentifier.contains("@")) {
-            resolvedUsername = userRepository.findByEmail(loginIdentifier)
-                    .map(User::getUsername)
-                    .orElse(loginIdentifier); // Fallback to let auth manager fail naturally
-        }
-
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(resolvedUsername, request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
         
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -160,6 +150,9 @@ public class AuthService {
         );
         SecurityContextHolder.getContext().setAuthentication(newAuth);
         securityContextRepository.saveContext(SecurityContextHolder.getContext(), servletRequest, servletResponse);
+
+        // Bind the session to the User-Agent
+        servletRequest.getSession().setAttribute("USER_AGENT", servletRequest.getHeader("User-Agent"));
         
         return new AuthResponse("Signup completed");
     }
