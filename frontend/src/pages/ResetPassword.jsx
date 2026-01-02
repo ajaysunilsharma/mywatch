@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 function ResetPassword() {
   const [userInfo, setUserInfo] = useState({ username: '', email: '' });
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -75,7 +77,35 @@ function ResetPassword() {
         </div>
         <div className="form-group">
           <label>New Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          <div style={{ position: 'relative' }}>
+            <input 
+              type={showPassword ? "text" : "password"} 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              required 
+              style={{ width: '100%', paddingRight: '40px' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#666',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+            </button>
+          </div>
         </div>
         <button type="submit" className="btn-primary" style={{ width: '100%' }}>Reset Password</button>
       </form>
