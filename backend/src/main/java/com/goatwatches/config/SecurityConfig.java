@@ -18,7 +18,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -48,7 +47,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .addFilterAfter(new SessionValidationFilter(), SecurityContextHolderFilter.class)
-            .addFilterBefore(jsonUsernamePasswordAuthenticationFilter(authenticationManager), UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(new JsonUsernamePasswordAuthenticationFilter(objectMapper,authenticationManager), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/user/signup", "/api/auth/admin/signup", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/auth/reset-password/validate", "/api/auth/oauth/complete-signup").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/watches/{id}/reviews").authenticated()
@@ -93,28 +92,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter(AuthenticationManager authenticationManager) {
-        JsonUsernamePasswordAuthenticationFilter filter = new JsonUsernamePasswordAuthenticationFilter(objectMapper);
-        filter.setAuthenticationManager(authenticationManager);
-        filter.setFilterProcessesUrl("/api/auth/login");
-        filter.setSecurityContextRepository(new HttpSessionSecurityContextRepository());
-        
-        filter.setAuthenticationSuccessHandler((request, response, authentication) -> {
-            // Bind session to User-Agent to prevent hijacking
-            request.getSession().setAttribute("USER_AGENT", request.getHeader("User-Agent"));
-            
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType("application/json");
-            response.getWriter().write(objectMapper.writeValueAsString(java.util.Map.of("message", "Login successful")));
-        });
-
-        filter.setAuthenticationFailureHandler((request, response, exception) -> {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write(objectMapper.writeValueAsString(java.util.Map.of("error", "Invalid credentials")));
-        });
-        return filter;
-    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {

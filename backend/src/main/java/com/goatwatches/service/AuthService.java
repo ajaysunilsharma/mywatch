@@ -181,6 +181,7 @@ public class AuthService {
         return new AuthResponse("Reset link has been sent to your registered email address");
     }
 
+    @Transactional
     public AuthResponse resetPassword(ResetPasswordRequest request) {
         String token = request.getToken();
         String newPassword = request.getNewPassword();
@@ -190,13 +191,15 @@ public class AuthService {
 
         if (resetToken.getExpiryDate().isBefore(Instant.now())) {
             tokenRepository.delete(resetToken);
+            tokenRepository.flush();
             throw new AuthException("Invalid or expired token");
         }
         
         User user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
         tokenRepository.delete(resetToken);
+        tokenRepository.flush();
         
         return new AuthResponse("Password successfully reset");
     }
