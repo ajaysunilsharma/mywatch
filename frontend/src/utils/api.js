@@ -3,6 +3,8 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: '/api',
   withCredentials: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
 });
 
 export const getWatches = (sort = 'top', page = 0, size = 20) => {
@@ -37,12 +39,12 @@ export const voteWatch = (watchId, vote) => {
   return api.post(`/watches/${watchId}/vote`, { vote });
 };
 
-export const deleteWatch = (id, token) => {
-  return api.delete(`/watches/${id}?token=${token}`);
+export const deleteWatch = (id) => {
+  return api.delete(`/watches/${id}`);
 };
 
-export const deleteReview = (id, token) => {
-  return api.delete(`/admin/reviews/${id}?token=${token}`);
+export const deleteReview = (id) => {
+  return api.delete(`/admin/reviews/${id}`);
 };
 
 export const updateWatch = (id, formData) => {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import api from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -22,19 +23,9 @@ function Login({ setUser }) {
     e.preventDefault();
     setError('');
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        // Trigger a reload or fetch user info in App
-        window.location.href = '/'; 
-      } else {
-        setError('Invalid credentials');
-      }
+      await api.post('/auth/login', { username, password });
+      // Trigger a reload or fetch user info in App
+      window.location.href = '/'; 
     } catch (err) {
       setError('Incorrect username or password');
     }
@@ -45,11 +36,7 @@ function Login({ setUser }) {
     setError('');
     setMessage('');
     try {
-      await fetch(`${API_URL}/api/auth/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: username }),
-      });
+      await api.post('/auth/forgot-password', { email: username });
       setMessage('A reset link has been sent to your registered email address');
     } catch (err) {
       setError('Request failed. Please try again.');

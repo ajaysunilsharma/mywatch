@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -18,22 +19,11 @@ function SetUsername({ setUser }) {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/oauth/complete-signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username }),
-      });
-
-      if (response.ok) {
-        // Refresh user state (which will now fetch the full user from /me)
-        window.location.href = '/';
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to set username so far');
-      }
+      await api.post('/auth/oauth/complete-signup', { username });
+      // Refresh user state (which will now fetch the full user from /me)
+      window.location.href = '/';
     } catch (err) {
-      setError('An error occurred');
+      setError(err.response?.data?.error || 'An error occurred');
     }
   };
 

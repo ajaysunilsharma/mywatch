@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import api from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -49,24 +50,15 @@ function Signup() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/user/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, username, password }),
-      });
-
-      if (response.ok) {
-        navigate('/login', { state: { email } });
-      } else {
-        const data = await response.json();
-        if (data.field) {
-            setFieldErrors({ [data.field]: data.error });
-        } else {
-            setError(data.error || 'Signup failed');
-        }
-      }
+      await api.post('/auth/user/signup', { email, username, password });
+      navigate('/login', { state: { email } });
     } catch (err) {
-      setError('Signup failed');
+      const data = err.response?.data;
+      if (data && data.field) {
+          setFieldErrors({ [data.field]: data.error });
+      } else {
+          setError(data?.error || 'Signup failed');
+      }
     }
   };
 

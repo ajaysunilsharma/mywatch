@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import api from '../utils/api';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -15,12 +16,8 @@ function ResetPassword() {
 
   useEffect(() => {
     if (token) {
-      fetch(`${API_URL}/api/auth/reset-password/validate?token=${token}`)
-        .then(res => {
-            if (!res.ok) throw new Error('Invalid token');
-            return res.json();
-        })
-        .then(data => setUserInfo(data))
+      api.get(`/auth/reset-password/validate?token=${token}`)
+        .then(res => setUserInfo(res.data))
         .catch(() => setError('Invalid or expired reset link.'));
     }
   }, [token]);
@@ -41,20 +38,10 @@ function ResetPassword() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/auth/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword: password }),
-      });
-
-      if (response.ok) {
-        navigate('/login');
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Reset failed');
-      }
+      await api.post('/auth/reset-password', { token, newPassword: password });
+      navigate('/login');
     } catch (err) {
-      setError('Reset failed');
+      setError(err.response?.data?.error || 'Reset failed');
     }
   };
 

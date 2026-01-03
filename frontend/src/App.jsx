@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ResetPassword from './pages/ResetPassword';
 import SetUsername from './pages/SetUsername';
+import api from './utils/api';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -20,13 +21,8 @@ function App() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/auth/me`, { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        } else {
-          setUser(null);
-        }
+        const res = await api.get('/auth/me');
+        setUser(res.data);
       } catch (e) {
         setUser(null);
       } finally {
@@ -38,14 +34,12 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_URL}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
+      await api.post('/auth/logout');
     } catch (error) {
       console.error('Logout failed', error);
     }
     setUser(null);
+    window.location.href = '/login';
   };
 
   if (loading) {
