@@ -106,12 +106,11 @@ public class WatchController {
     @PostMapping("/{id}/reviews")
     public ResponseEntity<?> createReview(
             @PathVariable String id,
-            @RequestParam(required = false) String authorName,
             @RequestParam String content,
             @RequestParam(required = false) MultipartFile image) {
 
         try {
-            Review savedReview = watchService.createReview(id, authorName, content, image);
+            Review savedReview = watchService.createReview(id, content, image);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedReview);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

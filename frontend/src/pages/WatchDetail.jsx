@@ -14,7 +14,6 @@ function WatchDetail({ user }) {
   const [totalReviewPages, setTotalReviewPages] = useState(0);
   
   const [reviewForm, setReviewForm] = useState({
-    authorName: '',
     content: ''
   });
   const [reviewImage, setReviewImage] = useState(null);
@@ -95,13 +94,12 @@ function WatchDetail({ user }) {
 
     try {
       const data = new FormData();
-      data.append('authorName', reviewForm.authorName || 'Anonymous');
       data.append('content', reviewForm.content);
       if (reviewImage) data.append('image', reviewImage);
 
       await createReview(id, data);
       
-      setReviewForm({ authorName: '', content: '' });
+      setReviewForm({ content: '' });
       setReviewImage(null);
       setReviewPage(0);
       loadReviews();
@@ -180,16 +178,6 @@ function WatchDetail({ user }) {
             {error && <div className="error-message">{error}</div>}
             
             <form onSubmit={handleReviewSubmit}>
-              <div className="form-group">
-                <input
-                  type="text"
-                  name="authorName"
-                  value={reviewForm.authorName}
-                  onChange={handleReviewChange}
-                  placeholder="Your name (optional)"
-                />
-              </div>
-
               <div className="form-group">
                 <textarea
                   name="content"

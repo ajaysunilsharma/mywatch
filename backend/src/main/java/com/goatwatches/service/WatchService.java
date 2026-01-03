@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,7 +34,10 @@ public class WatchService {
     
     @Autowired
     private FileStorageService fileStorageService;
-    
+
+    @Autowired
+    private AuthService authService;
+
     public Page<Watch> getWatches(String sort, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         
@@ -106,14 +111,16 @@ public class WatchService {
         return reviewRepository.save(review);
     }
 
-    public Review createReview(String id, String authorName, String content, MultipartFile image) throws IOException {
+    public Review createReview(String id, String content, MultipartFile image) throws IOException {
         if (content.length() > 1000) {
             throw new IllegalArgumentException("Review must be 1000 characters or less");
         }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var response = authService.getCurrentUser(authentication);
 
         Review review = new Review();
         review.setWatchId(id);
-        review.setAuthorName(authorName != null ? authorName : "Anonymous");
+        review.setAuthorName(response.getUsername());
         review.setContent(content);
 
         if (image != null && !image.isEmpty()) {
