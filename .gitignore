@@ -4,6 +4,7 @@
 .cache
 .config
 .local
+.idea
 
 *.log
 .DS_Store
