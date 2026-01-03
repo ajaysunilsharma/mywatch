@@ -58,6 +58,16 @@ public class AuthService {
     }
 
     public AuthResponse signup(SignupRequest request) {
+        createUser(request, "USER");
+        return new AuthResponse("User registered successfully");
+    }
+
+    public AuthResponse adminSignup(SignupRequest request) {
+        createUser(request, "ADMIN");
+        return new AuthResponse("Admin registered successfully");
+    }
+
+    private void createUser(SignupRequest request, String role){
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new AuthException("email", "Email already taken. Please Sign in or reset password.");
         }
@@ -69,26 +79,8 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        
-        user.setRole("USER");
+        user.setRole(role);
         userRepository.save(user);
-        return new AuthResponse("User registered successfully");
-    }
-
-    public AuthResponse adminSignup(SignupRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new AuthException("Email already taken");
-        }
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new AuthException("Username not available");
-        }
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole("ADMIN");
-        userRepository.save(user);
-        return new AuthResponse("Admin registered successfully");
     }
 
     public AuthResponse getCurrentUser(Authentication authentication) {
@@ -177,10 +169,8 @@ public class AuthService {
                     logger.error("Failed to send password reset email", e);
                 }
             });
-            return new AuthResponse("Reset link has been sent to your registered email address");
-        }else{
-            throw new AuthException("User not found");
         }
+        return new AuthResponse("Reset link has been sent to your registered email address");
     }
 
     @Transactional
