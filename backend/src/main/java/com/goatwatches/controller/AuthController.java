@@ -9,6 +9,7 @@ import com.goatwatches.exception.AuthException;
 import com.goatwatches.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -27,7 +28,7 @@ public class AuthController {
     }
 
     @PostMapping("/user/signup")
-    public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
+    public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest request) {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(authService.signup(request));
         } catch (AuthException e) {
@@ -39,7 +40,7 @@ public class AuthController {
     }
 
     @PostMapping("/admin/signup")
-    public ResponseEntity<?> adminSignup(@RequestBody SignupRequest request) {
+    public ResponseEntity<?> adminSignup(@Valid @RequestBody SignupRequest request) {
         try {
             return ResponseEntity.status(HttpStatus.CREATED).body(authService.adminSignup(request));
         } catch (AuthException e) {
@@ -60,7 +61,7 @@ public class AuthController {
     }
 
     @PostMapping("/oauth/complete-signup")
-    public ResponseEntity<?> completeOAuthSignup(@RequestBody OAuthSignupRequest request, Authentication authentication, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
+    public ResponseEntity<?> completeOAuthSignup(@Valid @RequestBody OAuthSignupRequest request, Authentication authentication, HttpServletRequest servletRequest, HttpServletResponse servletResponse) {
         try {
             return ResponseEntity.ok(authService.completeOAuthSignup(request, authentication, servletRequest, servletResponse));
         } catch (AuthException e) {
@@ -70,12 +71,12 @@ public class AuthController {
 
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<AuthResponse> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<AuthResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         return ResponseEntity.ok(authService.forgotPassword(request));
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {
             return ResponseEntity.ok(authService.resetPassword(request));
         } catch (AuthException e) {

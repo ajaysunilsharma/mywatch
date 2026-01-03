@@ -37,8 +37,8 @@ function Signup() {
     if (!isEmailValid(email)) {
       errors.email = 'Please enter a valid email address.';
     }
-    if (username.length < 3) {
-      errors.username = 'Username must be at least 3 characters long.';
+    if (username.length < 3 || username.length > 20) {
+      errors.username = 'Username must be between 3 and 20 characters.';
     }
     if (!isPasswordStrong(password)) {
       errors.password = 'Password must be at least 15 characters OR at least 8 characters including a number and a lowercase letter.';

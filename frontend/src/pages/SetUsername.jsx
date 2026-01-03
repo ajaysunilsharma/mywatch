@@ -12,6 +12,11 @@ function SetUsername({ setUser }) {
     e.preventDefault();
     setError('');
 
+    if (username.length < 3 || username.length > 20) {
+      setError('Username must be between 3 and 20 characters.');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/api/auth/oauth/complete-signup`, {
         method: 'POST',
