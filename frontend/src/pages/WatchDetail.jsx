@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getWatch, getReviews, createReview, voteWatch } from '../utils/api';
 import './WatchDetail.css';
 
-function WatchDetail() {
+function WatchDetail({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [watch, setWatch] = useState(null);
@@ -128,9 +128,11 @@ function WatchDetail() {
           <button onClick={() => navigate('/')} className="back-btn">
             ← Back to Leaderboard
           </button>
-          <Link to={`/edit/${id}`} className="edit-btn">
-            Edit Watch
-          </Link>
+          {user && user.role === 'ROLE_ADMIN' && (
+            <Link to={`/edit/${id}`} className="edit-btn">
+              Edit Watch
+            </Link>
+          )}
         </div>
 
         <div className="watch-detail-header">

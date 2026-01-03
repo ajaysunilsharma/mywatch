@@ -177,8 +177,10 @@ public class AuthService {
                     logger.error("Failed to send password reset email", e);
                 }
             });
+            return new AuthResponse("Reset link has been sent to your registered email address");
+        }else{
+            throw new AuthException("User not found");
         }
-        return new AuthResponse("Reset link has been sent to your registered email address");
     }
 
     @Transactional

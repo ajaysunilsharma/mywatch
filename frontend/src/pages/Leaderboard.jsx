@@ -3,7 +3,7 @@ import { getWatches } from '../utils/api';
 import WatchCard from '../components/WatchCard';
 import './Leaderboard.css';
 
-function Leaderboard() {
+function Leaderboard({ user }) {
   const [watches, setWatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState('top');
@@ -86,6 +86,7 @@ function Leaderboard() {
                   watch={watch} 
                   onVoteUpdate={handleVoteUpdate}
                   onDelete={handleDelete}
+                  user={user}
                 />
               ))}
             </div>
