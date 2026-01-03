@@ -50,6 +50,9 @@ public class Watch {
 
     @Column(name = "ranking_score")
     private Double rankingScore = 0.0;
+
+    @Column(name = "system_rank")
+    private Integer systemRank = 0;
     
     @Column(name = "price")
     private String price;

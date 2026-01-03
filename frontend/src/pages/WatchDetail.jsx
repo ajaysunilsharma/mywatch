@@ -170,21 +170,26 @@ function WatchDetail({ user }) {
             </p>
 
             <div className="vote-section">
-              <button 
-                onClick={() => handleVote(1)} 
-                disabled={voting}
-                className="vote-btn-large vote-up"
-              >
-                ▲ Upvote
-              </button>
-              <span className="vote-count-large">{watch.netVotes || 0} votes</span>
-              <button 
-                onClick={() => handleVote(-1)} 
-                disabled={voting}
-                className="vote-btn-large vote-down"
-              >
-                ▼ Downvote
-              </button>
+              <div className="vote-pill">
+                <button
+                  onClick={() => handleVote(1)}
+                  disabled={voting}
+                  className="vote-btn vote-up"
+                >
+                  ▲
+                </button>
+                <span className="vote-count up">{watch.upvotes || 0}</span>
+              </div>
+              <div className="vote-pill">
+                <button
+                  onClick={() => handleVote(-1)}
+                  disabled={voting}
+                  className="vote-btn vote-down"
+                >
+                  ▼
+                </button>
+                <span className="vote-count down">{watch.downvotes || 0}</span>
+              </div>
             </div>
           </div>
         </div>

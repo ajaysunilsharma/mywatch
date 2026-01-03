@@ -44,7 +44,7 @@ public class WatchService {
         return switch (sort != null ? sort : "top") {
             case "all" -> watchRepository.findAllByOrderByReviewCountDescNetVotesDesc(pageable);
             case "reviews" -> watchRepository.findByReviewCountGreaterThanOrderByReviewCountDesc(0, pageable);
-            default -> watchRepository.findByRankingScoreGreaterThanOrderByRankingScoreDesc(0.0, pageable);
+            default -> watchRepository.findTopRatedWatches(pageable);
         };
     }
     
@@ -173,6 +173,10 @@ public class WatchService {
         Watch watch = watchRepository.findById(watchId)
             .orElseThrow(() -> new IllegalArgumentException("Watch not found"));
         
+        // Initialize null vote counts
+        if (watch.getUpvotes() == null) watch.setUpvotes(0);
+        if (watch.getDownvotes() == null) watch.setDownvotes(0);
+
         Optional<Vote> existingVote = voteRepository.findByWatchIdAndVoterToken(watchId, voterToken);
         Vote vote = null;
 

@@ -15,7 +15,8 @@ public interface WatchRepository extends JpaRepository<Watch, String> {
     
     Page<Watch> findByNetVotesGreaterThanOrderByNetVotesDesc(int minVotes, Pageable pageable);
 
-    Page<Watch> findByRankingScoreGreaterThanOrderByRankingScoreDesc(double minScore, Pageable pageable);
+    @Query("SELECT w FROM Watch w ORDER BY CASE WHEN w.systemRank > 0 THEN 0 ELSE 1 END, w.systemRank ASC, w.rankingScore DESC")
+    Page<Watch> findTopRatedWatches(Pageable pageable);
     
     Page<Watch> findByReviewCountGreaterThanOrderByReviewCountDesc(int minReviews, Pageable pageable);
     
