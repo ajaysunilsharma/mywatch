@@ -208,7 +208,7 @@ public class WatchService {
             int netChange = voteValue - oldValue;
             watch.setNetVotes(watch.getNetVotes() + netChange);
         } else {
-            Vote vote = new Vote();
+            vote = new Vote();
             vote.setWatchId(watchId);
             vote.setVoterToken(voterToken);
             vote.setVoteValue(voteValue);
