@@ -2,16 +2,10 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '/api',
+  withCredentials: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN',
 });
-
-export const getVoterToken = () => {
-  let token = localStorage.getItem('voterToken');
-  if (!token) {
-    token = `voter_${Date.now()}_${Math.random().toString(36).substring(2)}`;
-    localStorage.setItem('voterToken', token);
-  }
-  return token;
-};
 
 export const getWatches = (sort = 'top', page = 0, size = 20) => {
   return api.get(`/watches?sort=${sort}&page=${page}&size=${size}`);
@@ -42,16 +36,15 @@ export const createReview = (watchId, formData) => {
 };
 
 export const voteWatch = (watchId, vote) => {
-  const voterToken = getVoterToken();
-  return api.post(`/watches/${watchId}/vote`, { vote, voterToken });
+  return api.post(`/watches/${watchId}/vote`, { vote });
 };
 
-export const deleteWatch = (id, token) => {
-  return api.delete(`/watches/${id}?token=${token}`);
+export const deleteWatch = (id) => {
+  return api.delete(`/watches/${id}`);
 };
 
-export const deleteReview = (id, token) => {
-  return api.delete(`/admin/reviews/${id}?token=${token}`);
+export const deleteReview = (id) => {
+  return api.delete(`/admin/reviews/${id}`);
 };
 
 export const updateWatch = (id, formData) => {

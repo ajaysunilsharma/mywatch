@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,7 +34,10 @@ public class WatchService {
     
     @Autowired
     private FileStorageService fileStorageService;
-    
+
+    @Autowired
+    private AuthService authService;
+
     public Page<Watch> getWatches(String sort, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         
@@ -106,14 +111,16 @@ public class WatchService {
         return reviewRepository.save(review);
     }
 
-    public Review createReview(String id, String authorName, String content, MultipartFile image) throws IOException {
+    public Review createReview(String id, String content, MultipartFile image) throws IOException {
         if (content.length() > 1000) {
             throw new IllegalArgumentException("Review must be 1000 characters or less");
         }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var response = authService.getCurrentUser(authentication);
 
         Review review = new Review();
         review.setWatchId(id);
-        review.setAuthorName(authorName != null ? authorName : "Anonymous");
+        review.setAuthorName(response.getUsername());
         review.setContent(content);
 
         if (image != null && !image.isEmpty()) {
@@ -146,30 +153,33 @@ public class WatchService {
             .orElseThrow(() -> new IllegalArgumentException("Watch not found"));
         
         Optional<Vote> existingVote = voteRepository.findByWatchIdAndVoterToken(watchId, voterToken);
+        Vote vote = null;
         
         if (existingVote.isPresent()) {
-            Vote vote = existingVote.get();
+            vote = existingVote.get();
             int oldValue = vote.getVoteValue();
-            
+
+            // upvoting after an upvote or downvoting after a downvote
             if (oldValue == voteValue) {
                 return watch;
             }
-            
-            vote.setVoteValue(voteValue);
-            voteRepository.save(vote);
-            
-            int netChange = voteValue - oldValue;
-            watch.setNetVotes(watch.getNetVotes() + netChange);
+
+            int finalVoteCountForUser = oldValue + voteValue;
+            vote.setVoteValue(finalVoteCountForUser);
+            if(finalVoteCountForUser == 0){
+                // 0 vote entries are not saved
+                voteRepository.deleteById(vote.getId());
+            }else{
+                voteRepository.save(vote);
+            }
         } else {
-            Vote vote = new Vote();
+            vote = new Vote();
             vote.setWatchId(watchId);
             vote.setVoterToken(voterToken);
             vote.setVoteValue(voteValue);
             voteRepository.save(vote);
-            
-            watch.setNetVotes(watch.getNetVotes() + voteValue);
         }
-        
+        watch.setNetVotes(watch.getNetVotes() + voteValue);
         return watchRepository.save(watch);
     }
 
