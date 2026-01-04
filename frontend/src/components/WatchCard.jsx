@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { voteWatch } from '../utils/api';
+import { voteWatch, deleteWatch } from '../utils/api';
 import './WatchCard.css';
 
-function WatchCard({ watch, onVoteUpdate }) {
+function WatchCard({ watch, onVoteUpdate, onDelete, user }) {
   const [voting, setVoting] = useState(false);
   const [currentVotes, setCurrentVotes] = useState(watch.netVotes || 0);
 
@@ -20,6 +20,20 @@ function WatchCard({ watch, onVoteUpdate }) {
       console.error('Error voting:', error);
     } finally {
       setVoting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this watch?')) {
+      try {
+        await deleteWatch(watch.id);
+        if (onDelete) {
+          onDelete(watch.id);
+        }
+      } catch (error) {
+        console.error('Error deleting watch:', error);
+        alert('Failed to delete watch.');
+      }
     }
   };
 
@@ -67,6 +81,15 @@ function WatchCard({ watch, onVoteUpdate }) {
             ▼
           </button>
         </div>
+        {user && user.role === 'ROLE_ADMIN' && (
+          <button
+            onClick={handleDelete}
+            className="delete-btn"
+            title="Delete Watch"
+          >
+            🗑️
+          </button>
+        )}
       </div>
     </div>
   );

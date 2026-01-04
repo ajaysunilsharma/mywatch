@@ -25,7 +25,7 @@ A community-curated leaderboard of the greatest watches of all time. Users can a
 ### Backend (Port 8080)
 ```bash
 cd backend
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 ### Frontend (Port 5000)

@@ -3,7 +3,7 @@ import { getWatches } from '../utils/api';
 import WatchCard from '../components/WatchCard';
 import './Leaderboard.css';
 
-function Leaderboard() {
+function Leaderboard({ user }) {
   const [watches, setWatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState('top');
@@ -31,6 +31,10 @@ function Leaderboard() {
     setWatches(prevWatches => 
       prevWatches.map(w => w.id === updatedWatch.id ? updatedWatch : w)
     );
+  };
+
+  const handleDelete = (deletedWatchId) => {
+    setWatches(prevWatches => prevWatches.filter(w => w.id !== deletedWatchId));
   };
 
   return (
@@ -81,6 +85,8 @@ function Leaderboard() {
                   key={watch.id} 
                   watch={watch} 
                   onVoteUpdate={handleVoteUpdate}
+                  onDelete={handleDelete}
+                  user={user}
                 />
               ))}
             </div>

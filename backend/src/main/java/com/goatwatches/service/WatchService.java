@@ -10,9 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -29,12 +34,15 @@ public class WatchService {
     
     @Autowired
     private FileStorageService fileStorageService;
-    
+
+    @Autowired
+    private AuthService authService;
+
     public Page<Watch> getWatches(String sort, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         
         return switch (sort != null ? sort : "top") {
-            case "new" -> watchRepository.findAllByOrderByCreatedAtDesc(pageable);
+            case "new" -> watchRepository.findAllByOrderByYearDescCreatedAtDesc(pageable);
             case "reviews" -> watchRepository.findAllOrderByReviewCountDesc(pageable);
             default -> watchRepository.findAllByOrderByNetVotesDesc(pageable);
         };
@@ -50,6 +58,22 @@ public class WatchService {
             throw new IllegalArgumentException("Watch already exists");
         }
         return watchRepository.save(watch);
+    }
+
+    public Watch createWatch(String brand, String model, Integer year, String description, String createdBy, MultipartFile image) throws IOException {
+        Watch watch = new Watch();
+        watch.setBrand(brand);
+        watch.setModel(model);
+        watch.setYear(year);
+        watch.setDescription(description);
+        watch.setCreatedBy(createdBy != null ? createdBy : "Anonymous");
+
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = fileStorageService.storeFile(image);
+            watch.setThumbnailUrl(imageUrl);
+        }
+
+        return createWatch(watch);
     }
     
     @Transactional
@@ -86,6 +110,26 @@ public class WatchService {
             .orElseThrow(() -> new IllegalArgumentException("Watch not found"));
         return reviewRepository.save(review);
     }
+
+    public Review createReview(String id, String content, MultipartFile image) throws IOException {
+        if (content.length() > 1000) {
+            throw new IllegalArgumentException("Review must be 1000 characters or less");
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        var response = authService.getCurrentUser(authentication);
+
+        Review review = new Review();
+        review.setWatchId(id);
+        review.setAuthorName(response.getUsername());
+        review.setContent(content);
+
+        if (image != null && !image.isEmpty()) {
+            String imageUrl = fileStorageService.storeFile(image);
+            review.setImageUrl(imageUrl);
+        }
+
+        return createReview(review);
+    }
     
     @Transactional
     public void deleteReview(String id) {
@@ -109,30 +153,61 @@ public class WatchService {
             .orElseThrow(() -> new IllegalArgumentException("Watch not found"));
         
         Optional<Vote> existingVote = voteRepository.findByWatchIdAndVoterToken(watchId, voterToken);
+        Vote vote = null;
         
         if (existingVote.isPresent()) {
-            Vote vote = existingVote.get();
+            vote = existingVote.get();
             int oldValue = vote.getVoteValue();
-            
+
+            // upvoting after an upvote or downvoting after a downvote
             if (oldValue == voteValue) {
                 return watch;
             }
-            
-            vote.setVoteValue(voteValue);
-            voteRepository.save(vote);
-            
-            int netChange = voteValue - oldValue;
-            watch.setNetVotes(watch.getNetVotes() + netChange);
+
+            int finalVoteCountForUser = oldValue + voteValue;
+            vote.setVoteValue(finalVoteCountForUser);
+            if(finalVoteCountForUser == 0){
+                // 0 vote entries are not saved
+                voteRepository.deleteById(vote.getId());
+            }else{
+                voteRepository.save(vote);
+            }
         } else {
-            Vote vote = new Vote();
+            vote = new Vote();
             vote.setWatchId(watchId);
             vote.setVoterToken(voterToken);
             vote.setVoteValue(voteValue);
             voteRepository.save(vote);
-            
-            watch.setNetVotes(watch.getNetVotes() + voteValue);
         }
-        
+        watch.setNetVotes(watch.getNetVotes() + voteValue);
         return watchRepository.save(watch);
+    }
+
+    public Optional<Watch> updateWatch(String id, String brand, String model, String referenceNumber, Integer year, String price, String description, MultipartFile image) {
+        return watchRepository.findById(id).map(watch -> {
+            watch.setBrand(brand);
+            watch.setModel(model);
+            watch.setReferenceNumber(referenceNumber);
+            watch.setYear(year);
+            watch.setPrice(price);
+            watch.setDescription(description);
+
+            if (image != null && !image.isEmpty()) {
+                // In a real app, delete the old image if necessary
+                String imageUrl = null;
+                try {
+                    imageUrl = fileStorageService.storeFile(image);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                watch.setThumbnailUrl(imageUrl);
+            }
+
+            return watchRepository.save(watch);
+        });
+    }
+
+    public List<Watch> searchWatches(String query) {
+        return watchRepository.searchWatches(query);
     }
 }

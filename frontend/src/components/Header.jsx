@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
+import SearchBar from './SearchBar';
 import './Header.css';
 
-function Header() {
+function Header({ user, onLogout }) {
   return (
     <header className="header">
       <div className="container">
@@ -9,9 +10,14 @@ function Header() {
           <Link to="/" className="logo">
             <h1>⌚ GOAT Watches</h1>
           </Link>
+          <div className="header-search">
+            <SearchBar />
+          </div>
           <nav className="nav">
             <Link to="/" className="nav-link">Home</Link>
-            <Link to="/add" className="nav-link btn-primary">Add Watch</Link>
+            {user && user.role === 'ROLE_ADMIN' && <Link to="/add" className="nav-link btn-primary">Add Watch</Link>}
+            <span className="nav-link">{user.username}</span>
+            <button onClick={onLogout} className="nav-link" style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 'inherit', fontFamily: 'inherit', color: 'inherit' }}>Logout</button>
           </nav>
         </div>
       </div>

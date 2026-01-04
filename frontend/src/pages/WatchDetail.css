@@ -3,18 +3,39 @@
   padding: 2rem 0;
 }
 
+.watch-detail-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
 .back-btn {
   background: transparent;
   color: var(--primary-green);
   border: none;
   padding: 0.5rem 0;
   font-weight: 500;
-  margin-bottom: 2rem;
   cursor: pointer;
 }
 
 .back-btn:hover {
   text-decoration: underline;
+}
+
+.edit-btn {
+  background: var(--gray-100);
+  color: var(--gray-700);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  background: var(--gray-200);
+  color: var(--primary-green);
 }
 
 .watch-detail-header {

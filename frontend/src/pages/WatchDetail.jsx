@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getWatch, getReviews, createReview, voteWatch } from '../utils/api';
 import './WatchDetail.css';
 
-function WatchDetail() {
+function WatchDetail({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [watch, setWatch] = useState(null);
@@ -14,7 +14,6 @@ function WatchDetail() {
   const [totalReviewPages, setTotalReviewPages] = useState(0);
   
   const [reviewForm, setReviewForm] = useState({
-    authorName: '',
     content: ''
   });
   const [reviewImage, setReviewImage] = useState(null);
@@ -95,13 +94,12 @@ function WatchDetail() {
 
     try {
       const data = new FormData();
-      data.append('authorName', reviewForm.authorName || 'Anonymous');
       data.append('content', reviewForm.content);
       if (reviewImage) data.append('image', reviewImage);
 
       await createReview(id, data);
       
-      setReviewForm({ authorName: '', content: '' });
+      setReviewForm({ content: '' });
       setReviewImage(null);
       setReviewPage(0);
       loadReviews();
@@ -124,9 +122,16 @@ function WatchDetail() {
   return (
     <div className="watch-detail">
       <div className="container">
-        <button onClick={() => navigate('/')} className="back-btn">
-          ← Back to Leaderboard
-        </button>
+        <div className="watch-detail-nav">
+          <button onClick={() => navigate('/')} className="back-btn">
+            ← Back to Leaderboard
+          </button>
+          {user && user.role === 'ROLE_ADMIN' && (
+            <Link to={`/edit/${id}`} className="edit-btn">
+              Edit Watch
+            </Link>
+          )}
+        </div>
 
         <div className="watch-detail-header">
           <div className="watch-detail-image">
@@ -173,16 +178,6 @@ function WatchDetail() {
             {error && <div className="error-message">{error}</div>}
             
             <form onSubmit={handleReviewSubmit}>
-              <div className="form-group">
-                <input
-                  type="text"
-                  name="authorName"
-                  value={reviewForm.authorName}
-                  onChange={handleReviewChange}
-                  placeholder="Your name (optional)"
-                />
-              </div>
-
               <div className="form-group">
                 <textarea
                   name="content"

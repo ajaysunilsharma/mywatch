@@ -81,6 +81,9 @@
   padding: 1rem 1.5rem;
   border-top: 1px solid var(--gray-200);
   background: var(--gray-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .vote-controls {
@@ -119,4 +122,18 @@
   color: var(--primary-green);
   min-width: 50px;
   text-align: center;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.delete-btn:hover {
+  background-color: #fee2e2;
 }

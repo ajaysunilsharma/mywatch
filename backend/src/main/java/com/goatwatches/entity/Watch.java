@@ -13,6 +13,9 @@ public class Watch {
     @Column(nullable = false)
     private String brand;
     
+    @Column(name = "reference_number", unique = true)
+    private String referenceNumber;
+    
     @Column(nullable = false)
     private String model;
     
@@ -34,6 +37,9 @@ public class Watch {
     @Column(name = "net_votes")
     private Integer netVotes = 0;
     
+    @Column(name = "price")
+    private String price;
+    
     @PrePersist
     protected void onCreate() {
         if (id == null) {
@@ -49,6 +55,9 @@ public class Watch {
     
     public String getBrand() { return brand; }
     public void setBrand(String brand) { this.brand = brand; }
+    
+    public String getReferenceNumber() { return referenceNumber; }
+    public void setReferenceNumber(String referenceNumber) { this.referenceNumber = referenceNumber; }
     
     public String getModel() { return model; }
     public void setModel(String model) { this.model = model; }
@@ -70,4 +79,7 @@ public class Watch {
     
     public Integer getNetVotes() { return netVotes; }
     public void setNetVotes(Integer netVotes) { this.netVotes = netVotes; }
+    
+    public String getPrice() { return price; }
+    public void setPrice(String price) { this.price = price; }
 }
