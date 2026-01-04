@@ -12,13 +12,15 @@ import java.util.List;
 public interface WatchRepository extends JpaRepository<Watch, String> {
     boolean existsByReferenceNumber(String referenceNumber);
     boolean existsByBrandIgnoreCaseAndModelIgnoreCase(String brand, String model);
-    Page<Watch> findAllByOrderByNetVotesDesc(Pageable pageable);
-    Page<Watch> findAllByOrderByCreatedAtDesc(Pageable pageable);
-    Page<Watch> findAllByOrderByYearDescCreatedAtDesc(Pageable pageable);
     
-    @Query("SELECT w FROM Watch w LEFT JOIN Review r ON r.watchId = w.id " +
-           "GROUP BY w.id ORDER BY COUNT(r.id) DESC")
-    Page<Watch> findAllOrderByReviewCountDesc(Pageable pageable);
+    Page<Watch> findByNetVotesGreaterThanOrderByNetVotesDesc(int minVotes, Pageable pageable);
+
+    @Query("SELECT w FROM Watch w ORDER BY CASE WHEN w.systemRank > 0 THEN 0 ELSE 1 END, w.systemRank ASC, w.rankingScore DESC")
+    Page<Watch> findTopRatedWatches(Pageable pageable);
+    
+    Page<Watch> findByReviewCountGreaterThanOrderByReviewCountDesc(int minReviews, Pageable pageable);
+    
+    Page<Watch> findAllByOrderByReviewCountDescNetVotesDesc(Pageable pageable);
 
     @Query("SELECT w FROM Watch w WHERE LOWER(w.brand) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(w.model) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<Watch> searchWatches(@Param("query") String query);

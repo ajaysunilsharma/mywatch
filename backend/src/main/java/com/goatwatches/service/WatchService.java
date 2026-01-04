@@ -42,9 +42,9 @@ public class WatchService {
         Pageable pageable = PageRequest.of(page, size);
         
         return switch (sort != null ? sort : "top") {
-            case "new" -> watchRepository.findAllByOrderByYearDescCreatedAtDesc(pageable);
-            case "reviews" -> watchRepository.findAllOrderByReviewCountDesc(pageable);
-            default -> watchRepository.findAllByOrderByNetVotesDesc(pageable);
+            case "all" -> watchRepository.findAllByOrderByReviewCountDescNetVotesDesc(pageable);
+            case "reviews" -> watchRepository.findByReviewCountGreaterThanOrderByReviewCountDesc(0, pageable);
+            default -> watchRepository.findTopRatedWatches(pageable);
         };
     }
     
@@ -105,12 +105,24 @@ public class WatchService {
             watchId, PageRequest.of(page, size));
     }
     
+    @Transactional
     public Review createReview(Review review) {
-        watchRepository.findById(review.getWatchId())
+        Watch watch = watchRepository.findById(review.getWatchId())
             .orElseThrow(() -> new IllegalArgumentException("Watch not found"));
-        return reviewRepository.save(review);
+
+        Review savedReview = reviewRepository.save(review);
+
+        // Update review count
+        if (watch.getReviewCount() == null) {
+            watch.setReviewCount(0);
+        }
+        watch.setReviewCount(watch.getReviewCount() + 1);
+        watchRepository.save(watch);
+
+        return savedReview;
     }
 
+    @Transactional
     public Review createReview(String id, String content, MultipartFile image) throws IOException {
         if (content.length() > 1000) {
             throw new IllegalArgumentException("Review must be 1000 characters or less");
@@ -140,6 +152,15 @@ public class WatchService {
             fileStorageService.deleteFile(review.getImageUrl());
         }
         
+        // Update review count
+        watchRepository.findById(review.getWatchId()).ifPresent(watch -> {
+            if (watch.getReviewCount() == null) {
+                watch.setReviewCount(0);
+            }
+            watch.setReviewCount(Math.max(0, watch.getReviewCount() - 1));
+            watchRepository.save(watch);
+        });
+
         reviewRepository.delete(review);
     }
     
@@ -152,9 +173,13 @@ public class WatchService {
         Watch watch = watchRepository.findById(watchId)
             .orElseThrow(() -> new IllegalArgumentException("Watch not found"));
         
+        // Initialize null vote counts
+        if (watch.getUpvotes() == null) watch.setUpvotes(0);
+        if (watch.getDownvotes() == null) watch.setDownvotes(0);
+
         Optional<Vote> existingVote = voteRepository.findByWatchIdAndVoterToken(watchId, voterToken);
         Vote vote = null;
-        
+
         if (existingVote.isPresent()) {
             vote = existingVote.get();
             int oldValue = vote.getVoteValue();
@@ -163,24 +188,72 @@ public class WatchService {
             if (oldValue == voteValue) {
                 return watch;
             }
-
-            int finalVoteCountForUser = oldValue + voteValue;
-            vote.setVoteValue(finalVoteCountForUser);
-            if(finalVoteCountForUser == 0){
-                // 0 vote entries are not saved
-                voteRepository.deleteById(vote.getId());
-            }else{
-                voteRepository.save(vote);
+            
+            vote.setVoteValue(voteValue);
+            voteRepository.save(vote);
+            
+            // Update upvotes/downvotes
+            if (oldValue == 1) {
+                watch.setUpvotes(Math.max(0, watch.getUpvotes() - 1));
+            } else if (oldValue == -1) {
+                watch.setDownvotes(Math.max(0, watch.getDownvotes() - 1));
             }
+
+            if (voteValue == 1) {
+                watch.setUpvotes(watch.getUpvotes() + 1);
+            } else if (voteValue == -1) {
+                watch.setDownvotes(watch.getDownvotes() + 1);
+            }
+
+            int netChange = voteValue - oldValue;
+            watch.setNetVotes(watch.getNetVotes() + netChange);
         } else {
             vote = new Vote();
             vote.setWatchId(watchId);
             vote.setVoterToken(voterToken);
             vote.setVoteValue(voteValue);
             voteRepository.save(vote);
+            
+            if (voteValue == 1) {
+                watch.setUpvotes(watch.getUpvotes() + 1);
+            } else if (voteValue == -1) {
+                watch.setDownvotes(watch.getDownvotes() + 1);
+            }
+
+            watch.setNetVotes(watch.getNetVotes() + voteValue);
         }
-        watch.setNetVotes(watch.getNetVotes() + voteValue);
+
+        // Calculate Wilson Score
+        watch.setRankingScore(calculateWilsonScore(watch.getUpvotes(), watch.getDownvotes()));
+        
         return watchRepository.save(watch);
+    }
+
+    /**
+     * Calculates the <a href="https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval">Wilson Score Interval</a> for ranking.
+     *
+     * The Wilson Score Interval estimates the "true" popularity of an item given a small sample size.
+     * It balances the proportion of positive votes with the uncertainty of having few votes.
+     *
+     * @param upvotes   Number of positive votes
+     * @param downvotes Number of negative votes
+     * @return The lower bound of the Wilson score confidence interval
+     */
+    private double calculateWilsonScore(int upvotes, int downvotes) {
+        int n = upvotes + downvotes;
+        if (n == 0) return 0.0;
+
+        // z is the z-score for the desired confidence level.
+        // 1.96 corresponds to a 95% confidence level in a normal distribution.
+        // This means we are 95% confident that the true score falls within the calculated interval.
+        double z = 1.96;
+
+        // phat (p-hat) is the observed proportion of positive votes.
+        double phat = (double) upvotes / n;
+
+        // The formula for the lower bound of the Wilson score interval:
+        // (phat + z^2/(2n) - z * sqrt((phat*(1-phat) + z^2/(4n))/n)) / (1 + z^2/n)
+        return (phat + z*z/(2*n) - z * Math.sqrt((phat*(1-phat) + z*z/(4*n))/n)) / (1 + z*z/n);
     }
 
     public Optional<Watch> updateWatch(String id, String brand, String model, String referenceNumber, Integer year, String price, String description, MultipartFile image) {

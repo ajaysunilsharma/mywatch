@@ -1,23 +1,2 @@
-.replit
-.upm
-.breakpoints
-.cache
-.config
-.local
-
-*.log
-.DS_Store
-.env
-.env.local
-
-backend/target/
-backend/data/
-backend/*.jar
-
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
-
-uploads/
-*.class
-*.jar
+# ... existing gitignore content ...
+backend/src/test/resources/application-test.properties
